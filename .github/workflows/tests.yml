@@ -21,6 +21,9 @@ jobs:
     - name: Show Swift version
       run: swift --version
 
+    - name: Setup XCFrameworks
+      run: swift package plugin build-frameworks
+
     - name: Build
       run: swift build
 
