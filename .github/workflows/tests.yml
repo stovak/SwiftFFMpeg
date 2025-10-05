@@ -21,18 +21,8 @@ jobs:
     - name: Show Swift version
       run: swift --version
 
-    - name: Setup XCFrameworks
-      run: |
-        cd xcframework
-        for zip in *.zip; do
-          if [ -f "$zip" ]; then
-            echo "Unzipping $zip..."
-            unzip -q -o "$zip"
-          fi
-        done
-        cd ..
-        echo "XCFrameworks ready:"
-        ls -la xcframework/*.xcframework
+    - name: Install FFmpeg
+      run: brew install ffmpeg
 
     - name: Build
       run: swift build

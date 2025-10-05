@@ -8,6 +8,14 @@ A Swift wrapper for the FFmpeg API.
 
 ## Installation
 
+### Prerequisites
+
+You need to install [FFmpeg](http://ffmpeg.org/) (Requires FFmpeg 7.1 or higher) before using this library. On macOS:
+
+```bash
+brew install ffmpeg
+```
+
 ### Swift Package Manager
 
 SwiftFFmpeg uses [SwiftPM](https://swift.org/package-manager/) as its build tool. To depend on SwiftFFmpeg in your own project, add a `dependencies` clause to your `Package.swift`:
@@ -18,30 +26,15 @@ dependencies: [
 ]
 ```
 
-### Building XCFrameworks
+The package uses the system-installed FFmpeg via pkg-config.
 
-This package includes pre-built XCFramework binaries for FFmpeg 7.1. When you first clone or use this package, you need to set up the frameworks:
+### Building Custom FFmpeg Frameworks (Optional)
 
-#### Option 1: Using Pre-built Binaries (Recommended)
-
-If the package includes `.zip` files in the `xcframework/` directory:
-
-```bash
-swift package plugin build-frameworks
-```
-
-This will automatically unzip the pre-built XCFrameworks for your architecture.
-
-#### Option 2: Building from Source
-
-If you need to build from source or update to a different FFmpeg version:
+If you need to build custom FFmpeg frameworks from source:
 
 ```bash
 # Build all frameworks from source
 ./Scripts/build.sh
-
-# Or use the plugin (which will trigger the build script if needed)
-swift package plugin build-frameworks --force
 ```
 
 The build script will:
@@ -50,17 +43,11 @@ The build script will:
 - Create XCFrameworks with proper structure
 - Generate zip files for distribution
 
-#### Architecture Support
+You can also use the plugin:
 
-The build system automatically detects your architecture:
-- **arm64**: macOS Apple Silicon (M1/M2/M3)
-- **x86_64**: macOS Intel
-
-Each XCFramework contains:
-- Framework structure (`LibName.framework`)
-- Headers for C API access
-- Static library binary
-- Info.plist with architecture metadata
+```bash
+swift package plugin build-frameworks
+```
 
 ## Documentation
 
