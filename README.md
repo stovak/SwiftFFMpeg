@@ -1,5 +1,7 @@
 # SwiftFFmpeg
 
+![Tests](https://github.com/stovak/SwiftFFMpeg/actions/workflows/tests.yml/badge.svg)
+
 A Swift wrapper for the FFmpeg API.
 
 > Note: SwiftFFmpeg is still in development, and the API is not guaranteed to be stable. It's subject to change without warning.
