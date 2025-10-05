@@ -39,6 +39,7 @@ if CommandLine.argc < 2 {
                           output format and rate and saves them to an output file named output_file.
      bsf                  API example about how to use bitstream filter.
      split_stream         API example about how to split stream from a container format.
+     concat               Concatenate multiple media files into a single output file.
     """)
   exit(1)
 }
@@ -77,6 +78,8 @@ case "bsf":
   try bsf()
 case "split_stream":
   try split_stream()
+case "concat":
+  try concat()
 default:
   ()
 }

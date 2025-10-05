@@ -12,13 +12,60 @@ let package = Package(
     )
   ],
   targets: [
+    .plugin(
+      name: "UnzipXCFrameworkPlugin",
+      capability: .buildTool()
+    ),
     .systemLibrary(
       name: "CFFmpeg",
       pkgConfig: "libavformat"
     ),
+    .binaryTarget(
+      name: "libavcodec",
+      path: "xcframework/libavcodec.xcframework"
+    ),
+    .binaryTarget(
+      name: "libavdevice",
+      path: "xcframework/libavdevice.xcframework"
+    ),
+    .binaryTarget(
+      name: "libavfilter",
+      path: "xcframework/libavfilter.xcframework"
+    ),
+    .binaryTarget(
+      name: "libavformat",
+      path: "xcframework/libavformat.xcframework"
+    ),
+    .binaryTarget(
+      name: "libavutil",
+      path: "xcframework/libavutil.xcframework"
+    ),
+    .binaryTarget(
+      name: "libswresample",
+      path: "xcframework/libswresample.xcframework"
+    ),
+    .binaryTarget(
+      name: "libswscale",
+      path: "xcframework/libswscale.xcframework"
+    ),
+    .binaryTarget(
+      name: "libpostproc",
+      path: "xcframework/libpostproc.xcframework"
+    ),
     .target(
       name: "SwiftFFmpeg",
-      dependencies: ["CFFmpeg"]
+      dependencies: [
+        "CFFmpeg",
+        "libavcodec",
+        "libavdevice",
+        "libavfilter",
+        "libavformat",
+        "libavutil",
+        "libswresample",
+        "libswscale",
+        "libpostproc"
+      ],
+      plugins: ["UnzipXCFrameworkPlugin"]
     ),
     .executableTarget(
       name: "Examples",
