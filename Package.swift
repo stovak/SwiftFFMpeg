@@ -14,7 +14,12 @@ let package = Package(
   targets: [
     .plugin(
       name: "UnzipXCFrameworkPlugin",
-      capability: .buildTool()
+      capability: .command(
+        intent: .custom(
+          verb: "build-frameworks",
+          description: "Build or unzip XCFrameworks for FFmpeg libraries"
+        )
+      )
     ),
     .systemLibrary(
       name: "CFFmpeg",
@@ -64,8 +69,7 @@ let package = Package(
         "libswresample",
         "libswscale",
         "libpostproc"
-      ],
-      plugins: ["UnzipXCFrameworkPlugin"]
+      ]
     ),
     .executableTarget(
       name: "Examples",

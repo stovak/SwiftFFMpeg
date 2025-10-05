@@ -75,3 +75,4 @@ scripts/*
 xcframework/*.xcframework/
 xcframework/.xcframework/
 framework/*
+.DS_Store

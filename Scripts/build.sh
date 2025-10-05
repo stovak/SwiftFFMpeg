@@ -4,7 +4,11 @@ FFMPEG_VERSION=7.1
 FFMPEG_SOURCE_DIR=FFmpeg-n$FFMPEG_VERSION
 FFMPEG_LIBS="libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale"
 PREFIX=`pwd`/output
-ARCH="x86_64"
+
+# Detect architecture if not specified
+if [ -z "$ARCH" ]; then
+    ARCH=$(uname -m)
+fi
 
 if [ ! -d $FFMPEG_SOURCE_DIR ]; then
   echo "Start downloading FFmpeg..."
