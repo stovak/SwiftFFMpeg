@@ -22,7 +22,17 @@ jobs:
       run: swift --version
 
     - name: Setup XCFrameworks
-      run: swift package plugin build-frameworks
+      run: |
+        cd xcframework
+        for zip in *.zip; do
+          if [ -f "$zip" ]; then
+            echo "Unzipping $zip..."
+            unzip -q -o "$zip"
+          fi
+        done
+        cd ..
+        echo "XCFrameworks ready:"
+        ls -la xcframework/*.xcframework
 
     - name: Build
       run: swift build
