@@ -1,7 +1,64 @@
 // swift-tools-version:5.10
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
+import Foundation
 import PackageDescription
+
+let shouldIncludeBinaryTargets = ProcessInfo.processInfo.environment["SWIFT_FFMPEG_SKIP_BINARIES"] != "1"
+
+let binaryTargetNames = [
+  "libavcodec",
+  "libavdevice",
+  "libavfilter",
+  "libavformat",
+  "libavutil",
+  "libpostproc",
+  "libswresample",
+  "libswscale"
+]
+
+var targets: [Target] = [
+  .plugin(
+    name: "BuildFFmpegPlugin",
+    capability: .command(
+      intent: .custom(
+        verb: "build-ffmpeg",
+        description: "Clone FFmpeg from git and build XCFrameworks"
+      )
+    )
+  )
+]
+
+if shouldIncludeBinaryTargets {
+  targets += binaryTargetNames.map { name in
+    .binaryTarget(
+      name: name,
+      path: "xcframework/\(name).xcframework"
+    )
+  }
+}
+
+let cFFmpegDependencies: [Target.Dependency] = shouldIncludeBinaryTargets ? binaryTargetNames.map { .target(name: $0) } : []
+
+targets += [
+  .target(
+    name: "CFFmpeg",
+    dependencies: cFFmpegDependencies,
+    publicHeadersPath: "."
+  ),
+  .target(
+    name: "SwiftFFmpeg",
+    dependencies: ["CFFmpeg"]
+  ),
+  .executableTarget(
+    name: "Examples",
+    dependencies: ["SwiftFFmpeg"]
+  ),
+  .testTarget(
+    name: "Tests",
+    dependencies: ["SwiftFFmpeg"]
+  )
+]
 
 let package = Package(
   name: "SwiftFFmpeg",
@@ -12,74 +69,5 @@ let package = Package(
       targets: ["SwiftFFmpeg"]
     )
   ],
-  targets: [
-    .plugin(
-      name: "BuildFFmpegPlugin",
-      capability: .command(
-        intent: .custom(
-          verb: "build-ffmpeg",
-          description: "Clone FFmpeg from git and build XCFrameworks"
-        )
-      )
-    ),
-    // FFmpeg XCFramework binary targets
-    .binaryTarget(
-      name: "libavcodec",
-      path: "xcframework/libavcodec.xcframework"
-    ),
-    .binaryTarget(
-      name: "libavdevice",
-      path: "xcframework/libavdevice.xcframework"
-    ),
-    .binaryTarget(
-      name: "libavfilter",
-      path: "xcframework/libavfilter.xcframework"
-    ),
-    .binaryTarget(
-      name: "libavformat",
-      path: "xcframework/libavformat.xcframework"
-    ),
-    .binaryTarget(
-      name: "libavutil",
-      path: "xcframework/libavutil.xcframework"
-    ),
-    .binaryTarget(
-      name: "libpostproc",
-      path: "xcframework/libpostproc.xcframework"
-    ),
-    .binaryTarget(
-      name: "libswresample",
-      path: "xcframework/libswresample.xcframework"
-    ),
-    .binaryTarget(
-      name: "libswscale",
-      path: "xcframework/libswscale.xcframework"
-    ),
-    .target(
-      name: "CFFmpeg",
-      dependencies: [
-        "libavcodec",
-        "libavdevice",
-        "libavfilter",
-        "libavformat",
-        "libavutil",
-        "libpostproc",
-        "libswresample",
-        "libswscale"
-      ],
-      publicHeadersPath: "."
-    ),
-    .target(
-      name: "SwiftFFmpeg",
-      dependencies: ["CFFmpeg"]
-    ),
-    .executableTarget(
-      name: "Examples",
-      dependencies: ["SwiftFFmpeg"]
-    ),
-    .testTarget(
-      name: "Tests",
-      dependencies: ["SwiftFFmpeg"]
-    ),
-  ]
+  targets: targets
 )

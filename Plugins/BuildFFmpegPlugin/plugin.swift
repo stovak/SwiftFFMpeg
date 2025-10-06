@@ -19,6 +19,25 @@ struct BuildFFmpegPlugin: CommandPlugin {
             "libswscale"
         ]
 
+        var requestedArchs: [String] = []
+        var forceRebuild = false
+        var iterator = arguments.makeIterator()
+        while let argument = iterator.next() {
+            switch argument {
+            case "--force":
+                forceRebuild = true
+            case "--arch":
+                guard let value = iterator.next() else { throw PluginError.missingArchitectureValue }
+                requestedArchs.append(value)
+            default:
+                throw PluginError.unknownArgument(argument)
+            }
+        }
+
+        if requestedArchs.isEmpty {
+            requestedArchs.append(try Self.detectHostArchitecture())
+        }
+
         // Check if .xcframework directories already exist
         var allExist = true
         for framework in frameworkNames {
@@ -29,55 +48,54 @@ struct BuildFFmpegPlugin: CommandPlugin {
             }
         }
 
-        // If all frameworks exist and --force is not specified
-        let forceRebuild = arguments.contains("--force")
         if allExist && !forceRebuild {
             print("All frameworks already exist. Use --force to rebuild.")
             return
         }
 
-        // Create a script to build frameworks from FFmpeg source
         let scriptPath = context.pluginWorkDirectory.appending("build_frameworks.sh")
+
+        let archList = requestedArchs.joined(separator: " ")
 
         let scriptContent = """
         #!/bin/bash
-        set -e
+        set -euo pipefail
 
         XCFRAMEWORK_DIR="\(xcframeworkDir.string)"
         SCRIPTS_DIR="\(scriptsDir.string)"
         PACKAGE_DIR="\(packageDir.string)"
 
-        echo "Building FFmpeg frameworks from source..."
-        echo "This will clone FFmpeg 7.1 and compile for your architecture."
+        echo "Building FFmpeg frameworks from the official source archive..."
+        echo "Architectures: \(archList.isEmpty ? "default" : archList)"
         echo ""
 
-        # Check if build script exists
         if [ ! -f "$SCRIPTS_DIR/build.sh" ]; then
             echo "Error: Build script not found at $SCRIPTS_DIR/build.sh"
             exit 1
         fi
 
-        # Run the build script
-        cd "$PACKAGE_DIR"
-        bash "$SCRIPTS_DIR/build.sh"
+        ARCHS="\(archList)"
 
-        # Create xcframework directory if it doesn't exist
+        cd "$PACKAGE_DIR"
+        if [ -n "$ARCHS" ]; then
+            ARCHS="$ARCHS" bash "$SCRIPTS_DIR/build.sh"
+        else
+            bash "$SCRIPTS_DIR/build.sh"
+        fi
+
         mkdir -p "$XCFRAMEWORK_DIR"
 
-        # Copy built frameworks to xcframework directory
         PREFIX="$PACKAGE_DIR/output"
 
         if [ -d "$PREFIX/xcframework" ]; then
-            echo ""
             echo "Copying frameworks to $XCFRAMEWORK_DIR..."
-            cp -R "$PREFIX/xcframework/"* "$XCFRAMEWORK_DIR/" || true
+            rsync -a "$PREFIX/xcframework/" "$XCFRAMEWORK_DIR/"
             echo "Done!"
         else
             echo "Error: No frameworks found in $PREFIX/xcframework"
             exit 1
         fi
 
-        echo ""
         echo "All frameworks are ready in $XCFRAMEWORK_DIR"
         """
 
@@ -114,8 +132,46 @@ struct BuildFFmpegPlugin: CommandPlugin {
 
         print("XCFrameworks setup complete!")
     }
+    private static func detectHostArchitecture() throws -> String {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/uname")
+        process.arguments = ["-m"]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        try process.run()
+        process.waitUntilExit()
+
+        guard process.terminationStatus == 0 else {
+            throw PluginError.buildFailed
+        }
+
+        guard let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !output.isEmpty else {
+            throw PluginError.buildFailed
+        }
+
+        return output
+    }
 }
 
 enum PluginError: Error {
     case buildFailed
+    case unknownArgument(String)
+    case missingArchitectureValue
+}
+
+extension PluginError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .buildFailed:
+            return "FFmpeg build failed. Check the script output for details."
+        case .unknownArgument(let argument):
+            return "Unknown argument: \(argument)"
+        case .missingArchitectureValue:
+            return "Missing value for --arch option"
+        }
+    }
 }
