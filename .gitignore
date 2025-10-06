@@ -71,8 +71,9 @@ docs/
 scripts/*
 !scripts/*.sh
 
-# Ignore unpacked xcframeworks (keep only the .zip archives)
-xcframework/*.xcframework/
-xcframework/.xcframework/
-framework/*
+# Build outputs
+xcframework/
+framework/
+output/
+FFmpeg-*/
 .DS_Store

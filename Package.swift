@@ -13,11 +13,11 @@ let package = Package(
   ],
   targets: [
     .plugin(
-      name: "UnzipXCFrameworkPlugin",
+      name: "BuildFFmpegPlugin",
       capability: .command(
         intent: .custom(
-          verb: "build-frameworks",
-          description: "Build or unzip XCFrameworks for FFmpeg libraries"
+          verb: "build-ffmpeg",
+          description: "Clone FFmpeg from git and build XCFrameworks"
         )
       )
     ),

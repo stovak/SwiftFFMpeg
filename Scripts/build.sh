@@ -1,7 +1,11 @@
 #!/bin/bash
 
+set -e
+
 FFMPEG_VERSION=7.1
-FFMPEG_SOURCE_DIR=FFmpeg-n$FFMPEG_VERSION
+FFMPEG_GIT_URL="https://git.ffmpeg.org/ffmpeg.git"
+FFMPEG_BRANCH="release/$FFMPEG_VERSION"
+FFMPEG_SOURCE_DIR="FFmpeg-release-$FFMPEG_VERSION"
 FFMPEG_LIBS="libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale"
 PREFIX=`pwd`/output
 
@@ -10,11 +14,15 @@ if [ -z "$ARCH" ]; then
     ARCH=$(uname -m)
 fi
 
-if [ ! -d $FFMPEG_SOURCE_DIR ]; then
-  echo "Start downloading FFmpeg..."
-  curl -LJO https://codeload.github.com/FFmpeg/FFmpeg/tar.gz/n$FFMPEG_VERSION || exit 1
-  tar -zxvf FFmpeg-n$FFMPEG_VERSION.tar.gz || exit 1
-  rm -f FFmpeg-n$FFMPEG_VERSION.tar.gz
+echo "Building FFmpeg $FFMPEG_VERSION for architecture: $ARCH"
+
+# Clone FFmpeg if not already cloned
+if [ ! -d "$FFMPEG_SOURCE_DIR" ]; then
+  echo "Cloning FFmpeg from git (branch: $FFMPEG_BRANCH)..."
+  git clone --branch "$FFMPEG_BRANCH" --depth 1 "$FFMPEG_GIT_URL" "$FFMPEG_SOURCE_DIR" || exit 1
+else
+  echo "FFmpeg source already exists at $FFMPEG_SOURCE_DIR"
+  echo "To force re-clone, delete the directory and run again"
 fi
 
 echo "Start compiling FFmpeg..."
@@ -37,8 +45,14 @@ make -j8 install || exit 1
 
 cd ..
 
+# Build frameworks for each library
 for LIB in $FFMPEG_LIBS; do
-  ./build_framework.sh $PREFIX $LIB $FFMPEG_VERSION || exit 1
+  echo "Building framework for $LIB..."
+  ./Scripts/build_framework.sh $PREFIX $LIB $FFMPEG_VERSION || exit 1
 done
 
-echo "The compilation of FFmpeg is completed."
+echo "FFmpeg compilation completed successfully!"
+echo "Frameworks built in: $PREFIX/xcframework/"
+echo ""
+echo "To use these frameworks, ensure they are available at: xcframework/"
+echo "You can copy them with: mkdir -p xcframework && cp -R $PREFIX/xcframework/* xcframework/"

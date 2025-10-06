@@ -28,26 +28,48 @@ dependencies: [
 
 The package uses the system-installed FFmpeg via pkg-config.
 
-### Building Custom FFmpeg Frameworks (Optional)
+### Building FFmpeg from Source (Advanced)
 
-If you need to build custom FFmpeg frameworks from source:
+If you want to build FFmpeg from source instead of using Homebrew:
+
+#### Using the Plugin (Recommended)
 
 ```bash
-# Build all frameworks from source
+swift package plugin build-ffmpeg
+```
+
+This will:
+- Clone FFmpeg 7.1 from the official git repository
+- Compile for your architecture (arm64 or x86_64)
+- Build XCFrameworks with proper structure
+- Place frameworks in `xcframework/` directory
+
+#### Manual Build
+
+Alternatively, you can run the build script directly:
+
+```bash
 ./Scripts/build.sh
 ```
 
-The build script will:
-- Download FFmpeg 7.1 source
-- Compile for your architecture (arm64 or x86_64)
-- Create XCFrameworks with proper structure
-- Generate zip files for distribution
+The build process:
+1. Clones FFmpeg from `https://git.ffmpeg.org/ffmpeg.git` (release/7.1 branch)
+2. Configures and compiles FFmpeg with GPL support
+3. Creates framework structures for all FFmpeg libraries
+4. Builds architecture-specific XCFrameworks
 
-You can also use the plugin:
+**Note:** Building from source takes 10-30 minutes depending on your machine.
+
+#### Using Custom Built Frameworks
+
+After building, copy the frameworks to make them available to the package:
 
 ```bash
-swift package plugin build-frameworks
+mkdir -p xcframework
+cp -R output/xcframework/* xcframework/
 ```
+
+Then update your `Package.swift` to include binary targets if needed.
 
 ## Documentation
 
