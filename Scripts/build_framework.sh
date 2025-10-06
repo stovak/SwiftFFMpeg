@@ -99,8 +99,4 @@ cat > $LIB_XCFRAMEWORK/Info.plist << EOF
 </plist>
 EOF
 
-# Create zip file for distribution
-cd $XCFRAMEWORK_DIR
-echo "Creating $LIB_NAME.zip..."
-zip -r -q $LIB_NAME.zip $LIB_NAME.xcframework
-echo "Created $LIB_NAME.zip"
+echo "Built $LIB_NAME.xcframework successfully"

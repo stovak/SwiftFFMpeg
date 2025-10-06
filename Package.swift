@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
   name: "SwiftFFmpeg",
+  platforms: [.macOS(.v10_15)],
   products: [
     .library(
       name: "SwiftFFmpeg",
@@ -21,15 +22,56 @@ let package = Package(
         )
       )
     ),
-    .systemLibrary(
+    // FFmpeg XCFramework binary targets
+    .binaryTarget(
+      name: "libavcodec",
+      path: "xcframework/libavcodec.xcframework"
+    ),
+    .binaryTarget(
+      name: "libavdevice",
+      path: "xcframework/libavdevice.xcframework"
+    ),
+    .binaryTarget(
+      name: "libavfilter",
+      path: "xcframework/libavfilter.xcframework"
+    ),
+    .binaryTarget(
+      name: "libavformat",
+      path: "xcframework/libavformat.xcframework"
+    ),
+    .binaryTarget(
+      name: "libavutil",
+      path: "xcframework/libavutil.xcframework"
+    ),
+    .binaryTarget(
+      name: "libpostproc",
+      path: "xcframework/libpostproc.xcframework"
+    ),
+    .binaryTarget(
+      name: "libswresample",
+      path: "xcframework/libswresample.xcframework"
+    ),
+    .binaryTarget(
+      name: "libswscale",
+      path: "xcframework/libswscale.xcframework"
+    ),
+    .target(
       name: "CFFmpeg",
-      pkgConfig: "libavformat"
+      dependencies: [
+        "libavcodec",
+        "libavdevice",
+        "libavfilter",
+        "libavformat",
+        "libavutil",
+        "libpostproc",
+        "libswresample",
+        "libswscale"
+      ],
+      publicHeadersPath: "."
     ),
     .target(
       name: "SwiftFFmpeg",
-      dependencies: [
-        "CFFmpeg"
-      ]
+      dependencies: ["CFFmpeg"]
     ),
     .executableTarget(
       name: "Examples",
