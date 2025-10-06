@@ -12,13 +12,24 @@ let package = Package(
     )
   ],
   targets: [
+    .plugin(
+      name: "BuildFFmpegPlugin",
+      capability: .command(
+        intent: .custom(
+          verb: "build-ffmpeg",
+          description: "Clone FFmpeg from git and build XCFrameworks"
+        )
+      )
+    ),
     .systemLibrary(
       name: "CFFmpeg",
       pkgConfig: "libavformat"
     ),
     .target(
       name: "SwiftFFmpeg",
-      dependencies: ["CFFmpeg"]
+      dependencies: [
+        "CFFmpeg"
+      ]
     ),
     .executableTarget(
       name: "Examples",

@@ -1,12 +1,16 @@
 # SwiftFFmpeg
 
+![Tests](https://github.com/stovak/SwiftFFMpeg/actions/workflows/tests.yml/badge.svg)
+
 A Swift wrapper for the FFmpeg API.
 
 > Note: SwiftFFmpeg is still in development, and the API is not guaranteed to be stable. It's subject to change without warning.
 
 ## Installation
 
-You should install [FFmpeg](http://ffmpeg.org/) (Requires FFmpeg 7.1 or higher) before use this library, on macOS, you can:
+### Prerequisites
+
+You need to install [FFmpeg](http://ffmpeg.org/) (Requires FFmpeg 7.1 or higher) before using this library. On macOS:
 
 ```bash
 brew install ffmpeg
@@ -14,13 +18,58 @@ brew install ffmpeg
 
 ### Swift Package Manager
 
-SwiftFFmpeg primarily uses [SwiftPM](https://swift.org/package-manager/) as its build tool, so we recommend using that as well. If you want to depend on SwiftFFmpeg in your own project, it's as simple as adding a `dependencies` clause to your `Package.swift`:
+SwiftFFmpeg uses [SwiftPM](https://swift.org/package-manager/) as its build tool. To depend on SwiftFFmpeg in your own project, add a `dependencies` clause to your `Package.swift`:
 
 ```swift
 dependencies: [
     .package(url: "https://github.com/sunlubo/SwiftFFmpeg.git", from: "1.0.0")
 ]
 ```
+
+The package uses the system-installed FFmpeg via pkg-config.
+
+### Building FFmpeg from Source (Advanced)
+
+If you want to build FFmpeg from source instead of using Homebrew:
+
+#### Using the Plugin (Recommended)
+
+```bash
+swift package plugin build-ffmpeg
+```
+
+This will:
+- Clone FFmpeg 7.1 from the official git repository
+- Compile for your architecture (arm64 or x86_64)
+- Build XCFrameworks with proper structure
+- Place frameworks in `xcframework/` directory
+
+#### Manual Build
+
+Alternatively, you can run the build script directly:
+
+```bash
+./Scripts/build.sh
+```
+
+The build process:
+1. Clones FFmpeg from `https://git.ffmpeg.org/ffmpeg.git` (release/7.1 branch)
+2. Configures and compiles FFmpeg with GPL support
+3. Creates framework structures for all FFmpeg libraries
+4. Builds architecture-specific XCFrameworks
+
+**Note:** Building from source takes 10-30 minutes depending on your machine.
+
+#### Using Custom Built Frameworks
+
+After building, copy the frameworks to make them available to the package:
+
+```bash
+mkdir -p xcframework
+cp -R output/xcframework/* xcframework/
+```
+
+Then update your `Package.swift` to include binary targets if needed.
 
 ## Documentation
 

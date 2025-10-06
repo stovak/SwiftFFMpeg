@@ -3,8 +3,23 @@
 PREFIX=$1
 LIB_NAME=$2
 LIB_VERSION=$3
+
+# Detect architecture
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ]; then
+    PLATFORM_ID="macos-arm64"
+    ARCH_NAME="arm64"
+elif [ "$ARCH" = "x86_64" ]; then
+    PLATFORM_ID="macos-x86_64"
+    ARCH_NAME="x86_64"
+else
+    echo "Unsupported architecture: $ARCH"
+    exit 1
+fi
+
 LIB_FRAMEWORK=$PREFIX/framework/$LIB_NAME.framework
 LIB_XCFRAMEWORK=$PREFIX/xcframework/$LIB_NAME.xcframework
+XCFRAMEWORK_DIR=$(dirname $LIB_XCFRAMEWORK)
 
 # build framework
 rm -rf $LIB_FRAMEWORK
@@ -50,11 +65,11 @@ rm -rf $LIB_XCFRAMEWORK
 #   -create-xcframework \
 #   -framework $LIB_FRAMEWORK \
 #   -output $LIB_XCFRAMEWORK
-# 
+#
 # error: unable to find any specific architecture information in the binary at xxx
 
-mkdir -p $LIB_XCFRAMEWORK/macos-x86_64
-cp -R $LIB_FRAMEWORK $LIB_XCFRAMEWORK/macos-x86_64
+mkdir -p $LIB_XCFRAMEWORK/$PLATFORM_ID
+cp -R $LIB_FRAMEWORK $LIB_XCFRAMEWORK/$PLATFORM_ID
 
 cat > $LIB_XCFRAMEWORK/Info.plist << EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -65,12 +80,12 @@ cat > $LIB_XCFRAMEWORK/Info.plist << EOF
 	<array>
 		<dict>
 			<key>LibraryIdentifier</key>
-			<string>macos-x86_64</string>
+			<string>$PLATFORM_ID</string>
 			<key>LibraryPath</key>
 			<string>$LIB_NAME.framework</string>
 			<key>SupportedArchitectures</key>
 			<array>
-				<string>x86_64</string>
+				<string>$ARCH_NAME</string>
 			</array>
 			<key>SupportedPlatform</key>
 			<string>macos</string>
@@ -83,3 +98,9 @@ cat > $LIB_XCFRAMEWORK/Info.plist << EOF
 </dict>
 </plist>
 EOF
+
+# Create zip file for distribution
+cd $XCFRAMEWORK_DIR
+echo "Creating $LIB_NAME.zip..."
+zip -r -q $LIB_NAME.zip $LIB_NAME.xcframework
+echo "Created $LIB_NAME.zip"

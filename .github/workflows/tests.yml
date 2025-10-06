@@ -1,0 +1,33 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: macos-15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+    - name: Show Swift version
+      run: swift --version
+
+    - name: Install FFmpeg
+      run: brew install ffmpeg
+      # Note: We use Homebrew FFmpeg in CI for speed
+      # For custom builds, use: swift package plugin build-ffmpeg
+
+    - name: Build
+      run: swift build
+
+    - name: Run tests
+      run: swift test

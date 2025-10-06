@@ -336,7 +336,8 @@ extension AVCodec {
     /// may return multiple frames in a packet. This has many disadvantages like
     /// prohibiting stream copy in many cases thus it should only be considered
     /// as a last resort.
-    public static let subframes = Cap(rawValue: UInt32(AV_CODEC_CAP_SUBFRAMES))
+    /// Note: AV_CODEC_CAP_SUBFRAMES was removed in FFmpeg 8.0
+    // public static let subframes = Cap(rawValue: UInt32(AV_CODEC_CAP_SUBFRAMES))
     /// Codec is experimental and is thus avoided in favor of non experimental encoders.
     public static let experimental = Cap(rawValue: UInt32(AV_CODEC_CAP_EXPERIMENTAL))
     /// Codec should fill in channel configuration and samplerate instead of container.
@@ -382,7 +383,7 @@ extension AVCodec.Cap: CustomStringConvertible {
     if contains(.dr1) { str += "dr1, " }
     if contains(.delay) { str += "delay, " }
     if contains(.smallLastFrame) { str += "smallLastFrame, " }
-    if contains(.subframes) { str += "subframes, " }
+    // if contains(.subframes) { str += "subframes, " }
     if contains(.experimental) { str += "experimental, " }
     if contains(.channelConf) { str += "channelConf, " }
     if contains(.frameThreads) { str += "frameThreads, " }

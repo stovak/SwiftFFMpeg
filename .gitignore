@@ -70,3 +70,10 @@ SwiftFFmpeg.xcodeproj/
 docs/
 scripts/*
 !scripts/*.sh
+
+# Build outputs
+xcframework/
+framework/
+output/
+FFmpeg-*/
+.DS_Store
