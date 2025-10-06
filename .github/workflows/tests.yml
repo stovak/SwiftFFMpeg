@@ -21,10 +21,8 @@ jobs:
     - name: Show Swift version
       run: swift --version
 
-    - name: Install FFmpeg
-      run: brew install ffmpeg
-      # Note: We use Homebrew FFmpeg in CI for speed
-      # For custom builds, use: swift package plugin build-ffmpeg
+    - name: Build FFmpeg XCFrameworks
+      run: swift package plugin build-ffmpeg --force
 
     - name: Build
       run: swift build

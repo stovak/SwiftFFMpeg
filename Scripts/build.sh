@@ -1,58 +1,80 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-FFMPEG_VERSION=7.1
-FFMPEG_GIT_URL="https://git.ffmpeg.org/ffmpeg.git"
-FFMPEG_BRANCH="release/$FFMPEG_VERSION"
-FFMPEG_SOURCE_DIR="FFmpeg-release-$FFMPEG_VERSION"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+FFMPEG_VERSION=${FFMPEG_VERSION:-7.1}
+FFMPEG_ARCHIVE="ffmpeg-$FFMPEG_VERSION.tar.xz"
+FFMPEG_SOURCE_URL=${FFMPEG_SOURCE_URL:-"https://ffmpeg.org/releases/$FFMPEG_ARCHIVE"}
 FFMPEG_LIBS="libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale"
-PREFIX=`pwd`/output
 
-# Detect architecture if not specified
-if [ -z "$ARCH" ]; then
-    ARCH=$(uname -m)
+HOST_ARCH=$(uname -m)
+ARCHS_ENV=${ARCHS:-${ARCH:-$HOST_ARCH}}
+IFS=' ' read -r -a REQUESTED_ARCHS <<<"$ARCHS_ENV"
+
+if [ ${#REQUESTED_ARCHS[@]} -eq 0 ]; then
+  echo "No architectures requested for build"
+  exit 1
 fi
 
-echo "Building FFmpeg $FFMPEG_VERSION for architecture: $ARCH"
+CACHE_DIR="$ROOT_DIR/.ffmpeg-cache"
+SOURCE_ARCHIVE_PATH="$CACHE_DIR/$FFMPEG_ARCHIVE"
 
-# Clone FFmpeg if not already cloned
-if [ ! -d "$FFMPEG_SOURCE_DIR" ]; then
-  echo "Cloning FFmpeg from git (branch: $FFMPEG_BRANCH)..."
-  git clone --branch "$FFMPEG_BRANCH" --depth 1 "$FFMPEG_GIT_URL" "$FFMPEG_SOURCE_DIR" || exit 1
+mkdir -p "$CACHE_DIR"
+
+if [ ! -f "$SOURCE_ARCHIVE_PATH" ]; then
+  echo "Downloading FFmpeg $FFMPEG_VERSION source from $FFMPEG_SOURCE_URL"
+  curl -L "$FFMPEG_SOURCE_URL" -o "$SOURCE_ARCHIVE_PATH"
 else
-  echo "FFmpeg source already exists at $FFMPEG_SOURCE_DIR"
-  echo "To force re-clone, delete the directory and run again"
+  echo "Using cached FFmpeg archive at $SOURCE_ARCHIVE_PATH"
 fi
 
-echo "Start compiling FFmpeg..."
+OUTPUT_DIR="$ROOT_DIR/output"
+rm -rf "$OUTPUT_DIR"
+mkdir -p "$OUTPUT_DIR"
 
-rm -rf $PREFIX
-cd $FFMPEG_SOURCE_DIR
+for ARCH in "${REQUESTED_ARCHS[@]}"; do
+  if [ "$ARCH" != "$HOST_ARCH" ]; then
+    echo "Building FFmpeg for $ARCH on $HOST_ARCH host"
+    echo "Ensure you are running on hardware that matches the requested architecture or configure cross-compilation manually."
+  fi
 
-./configure \
-  --prefix=$PREFIX \
-  --enable-gpl \
-  --enable-version3 \
-  --disable-programs \
-  --disable-doc \
-  --arch=$ARCH \
-  --extra-cflags="-arch $ARCH -march=native -fno-stack-check" \
-  --disable-debug || exit 1
+  BUILD_ROOT="$ROOT_DIR/.build/ffmpeg-$ARCH"
+  INSTALL_PREFIX="$OUTPUT_DIR/$ARCH/install"
 
-make clean
-make -j8 install || exit 1
+  echo "Preparing build workspace for $ARCH at $BUILD_ROOT"
+  rm -rf "$BUILD_ROOT"
+  mkdir -p "$BUILD_ROOT"
+  tar -xf "$SOURCE_ARCHIVE_PATH" -C "$BUILD_ROOT" --strip-components=1
 
-cd ..
+  pushd "$BUILD_ROOT" >/dev/null
 
-# Build frameworks for each library
-for LIB in $FFMPEG_LIBS; do
-  echo "Building framework for $LIB..."
-  ./Scripts/build_framework.sh $PREFIX $LIB $FFMPEG_VERSION || exit 1
+  echo "Configuring FFmpeg $FFMPEG_VERSION for $ARCH"
+  ./configure \
+    --prefix="$INSTALL_PREFIX" \
+    --enable-gpl \
+    --enable-version3 \
+    --disable-programs \
+    --disable-doc \
+    --arch="$ARCH" \
+    --target-os=darwin \
+    --cc=clang \
+    --extra-cflags="-arch $ARCH -fno-stack-check" \
+    --extra-ldflags="-arch $ARCH" \
+    --disable-debug
+
+  make clean
+  make -j$(sysctl -n hw.ncpu 2>/dev/null || nproc) install
+
+  popd >/dev/null
+
+  echo "Creating XCFramework slices for $ARCH"
+  for LIB in $FFMPEG_LIBS; do
+    "$SCRIPT_DIR/build_framework.sh" "$INSTALL_PREFIX" "$LIB" "$FFMPEG_VERSION" "$ARCH" "$OUTPUT_DIR"
+  done
 done
 
 echo "FFmpeg compilation completed successfully!"
-echo "Frameworks built in: $PREFIX/xcframework/"
-echo ""
-echo "To use these frameworks, ensure they are available at: xcframework/"
-echo "You can copy them with: mkdir -p xcframework && cp -R $PREFIX/xcframework/* xcframework/"
+echo "Framework slices are available in: $OUTPUT_DIR/xcframework"

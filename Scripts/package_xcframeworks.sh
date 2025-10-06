@@ -1,22 +1,22 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
 XCFRAMEWORK_DIR="xcframework"
 PACKAGE_DIR="${1:-$XCFRAMEWORK_DIR}"
+ARTIFACT_SUFFIX=${ARTIFACT_SUFFIX:-}
 
 FFMPEG_LIBS="libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale"
 
 echo "Packaging XCFrameworks for distribution..."
 echo ""
 
-# Create output directory
 mkdir -p "$PACKAGE_DIR"
 
 for LIB in $FFMPEG_LIBS; do
   XCFRAMEWORK="$XCFRAMEWORK_DIR/$LIB.xcframework"
-  ZIP_FILE="$PACKAGE_DIR/$LIB.xcframework.zip"
-  CHECKSUM_FILE="$PACKAGE_DIR/$LIB.xcframework.zip.checksum"
+  ZIP_FILE="$PACKAGE_DIR/$LIB.xcframework$ARTIFACT_SUFFIX.zip"
+  CHECKSUM_FILE="$ZIP_FILE.checksum"
 
   if [ ! -d "$XCFRAMEWORK" ]; then
     echo "Warning: $XCFRAMEWORK not found, skipping..."
@@ -25,31 +25,31 @@ for LIB in $FFMPEG_LIBS; do
 
   echo "Packaging $LIB..."
 
-  # Create zip file
-  cd "$XCFRAMEWORK_DIR"
+  pushd "$XCFRAMEWORK_DIR" >/dev/null
+  rm -f "../$ZIP_FILE"
   zip -r -q "../$ZIP_FILE" "$LIB.xcframework"
-  cd ..
+  popd >/dev/null
 
-  # Calculate checksum
   CHECKSUM=$(swift package compute-checksum "$ZIP_FILE")
   echo "$CHECKSUM" > "$CHECKSUM_FILE"
 
   echo "  - Created: $ZIP_FILE"
   echo "  - Checksum: $CHECKSUM"
   echo ""
+
 done
 
 echo "Packaging complete!"
+
 echo ""
-echo "To use these in Package.swift with remote URLs, use:"
-echo ""
+echo "Binary target declarations:"
 for LIB in $FFMPEG_LIBS; do
-  CHECKSUM_FILE="$PACKAGE_DIR/$LIB.xcframework.zip.checksum"
+  CHECKSUM_FILE="$PACKAGE_DIR/$LIB.xcframework$ARTIFACT_SUFFIX.zip.checksum"
   if [ -f "$CHECKSUM_FILE" ]; then
     CHECKSUM=$(cat "$CHECKSUM_FILE")
     echo ".binaryTarget("
-    echo "  name: \"$LIB\","
-    echo "  url: \"https://github.com/YOUR_USERNAME/SwiftFFMpeg/releases/download/VERSION/$LIB.xcframework.zip\","
+    echo "  name: \"$LIB\"," 
+    echo "  url: \"https://github.com/YOUR_ORG/SwiftFFMpeg/releases/download/VERSION/$LIB.xcframework$ARTIFACT_SUFFIX.zip\"," 
     echo "  checksum: \"$CHECKSUM\""
     echo "),"
   fi
