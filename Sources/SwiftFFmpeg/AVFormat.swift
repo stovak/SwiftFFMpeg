@@ -231,7 +231,8 @@ extension AVOutputFormat {
     /// Format does not require any streams.
     public static let noStreams = Flag(rawValue: AVFMT_NOSTREAMS)
     /// Format allows flushing. If not set, the muxer will not receive a NULL packet in the `write_packet` function.
-    public static let allowFlush = Flag(rawValue: AVFMT_ALLOW_FLUSH)
+    /// Note: AVFMT_ALLOW_FLUSH was removed in FFmpeg 8.0
+    // public static let allowFlush = Flag(rawValue: AVFMT_ALLOW_FLUSH)
     /// Format does not require strictly increasing timestamps, but they must still be monotonic.
     public static let tsNonstrict = Flag(rawValue: AVFMT_TS_NONSTRICT)
     /// Format allows muxing negative timestamps. If not set the timestamp will be shifted in `writeFrame` and
@@ -259,7 +260,7 @@ extension AVOutputFormat.Flag: CustomStringConvertible {
     if contains(.variableFPS) { str += "variableFPS, " }
     if contains(.noDimensions) { str += "noDimensions, " }
     if contains(.noStreams) { str += "noStreams, " }
-    if contains(.allowFlush) { str += "allowFlush, " }
+    // if contains(.allowFlush) { str += "allowFlush, " }
     if contains(.tsNonstrict) { str += "tsNonstrict, " }
     if contains(.tsNegative) { str += "tsNegative, " }
     if str.suffix(2) == ", " {
