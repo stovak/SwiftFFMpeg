@@ -10,7 +10,7 @@ A Swift wrapper for the FFmpeg API.
 
 ### Prerequisites
 
-You need to install [FFmpeg](http://ffmpeg.org/) (Requires FFmpeg 7.1 or higher) before using this library. On macOS:
+You need to install [FFmpeg](http://ffmpeg.org/) (Requires FFmpeg 8.0 or higher) before using this library. On macOS:
 
 ```bash
 brew install ffmpeg
@@ -22,7 +22,7 @@ SwiftFFmpeg uses [SwiftPM](https://swift.org/package-manager/) as its build tool
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/sunlubo/SwiftFFmpeg.git", from: "1.0.0")
+    .package(url: "https://github.com/stovak/SwiftFFmpeg.git", from: "1.0.1")
 ]
 ```
 
