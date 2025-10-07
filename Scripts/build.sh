@@ -19,7 +19,7 @@ if [ ${#REQUESTED_ARCHS[@]} -eq 0 ]; then
   exit 1
 fi
 
-CACHE_DIR="$ROOT_DIR/.ffmpeg-cache"
+CACHE_DIR="${FFMPEG_CACHE_DIR:-$ROOT_DIR/.ffmpeg-cache}"
 SOURCE_ARCHIVE_PATH="$CACHE_DIR/$FFMPEG_ARCHIVE"
 
 mkdir -p "$CACHE_DIR"
@@ -31,7 +31,7 @@ else
   echo "Using cached FFmpeg archive at $SOURCE_ARCHIVE_PATH"
 fi
 
-OUTPUT_DIR="$ROOT_DIR/output"
+OUTPUT_DIR="${FFMPEG_OUTPUT_DIR:-$ROOT_DIR/output}"
 rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
@@ -41,7 +41,8 @@ for ARCH in "${REQUESTED_ARCHS[@]}"; do
     echo "Ensure you are running on hardware that matches the requested architecture or configure cross-compilation manually."
   fi
 
-  BUILD_ROOT="$ROOT_DIR/.build/ffmpeg-$ARCH"
+  BUILD_ROOT_BASE="${FFMPEG_BUILD_ROOT_BASE:-$ROOT_DIR/.build/ffmpeg}"
+  BUILD_ROOT="$BUILD_ROOT_BASE-$ARCH"
   INSTALL_PREFIX="$OUTPUT_DIR/$ARCH/install"
 
   echo "Preparing build workspace for $ARCH at $BUILD_ROOT"

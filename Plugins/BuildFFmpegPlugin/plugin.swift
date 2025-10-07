@@ -85,7 +85,7 @@ struct BuildFFmpegPlugin: CommandPlugin {
 
         mkdir -p "$XCFRAMEWORK_DIR"
 
-        PREFIX="$PACKAGE_DIR/output"
+        PREFIX="${FFMPEG_OUTPUT_DIR:-$PACKAGE_DIR/output}"
 
         if [ -d "$PREFIX/xcframework" ]; then
             echo "Copying frameworks to $XCFRAMEWORK_DIR..."
@@ -113,6 +113,12 @@ struct BuildFFmpegPlugin: CommandPlugin {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
         process.arguments = [scriptPath.string]
+
+        var environment = ProcessInfo.processInfo.environment
+        environment["FFMPEG_CACHE_DIR"] = context.pluginWorkDirectory.appending("cache").string
+        environment["FFMPEG_OUTPUT_DIR"] = context.pluginWorkDirectory.appending("output").string
+        environment["FFMPEG_BUILD_ROOT_BASE"] = context.pluginWorkDirectory.appending("build").string
+        process.environment = environment
 
         let pipe = Pipe()
         process.standardOutput = pipe
