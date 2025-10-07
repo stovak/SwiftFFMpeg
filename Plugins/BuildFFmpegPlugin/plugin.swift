@@ -115,9 +115,17 @@ struct BuildFFmpegPlugin: CommandPlugin {
         process.arguments = [scriptPath.string]
 
         var environment = ProcessInfo.processInfo.environment
-        environment["FFMPEG_CACHE_DIR"] = context.pluginWorkDirectory.appending("cache").string
-        environment["FFMPEG_OUTPUT_DIR"] = context.pluginWorkDirectory.appending("output").string
-        environment["FFMPEG_BUILD_ROOT_BASE"] = context.pluginWorkDirectory.appending("build").string
+        let cacheDir = context.pluginWorkDirectory.appending("cache")
+        let outputDir = context.pluginWorkDirectory.appending("output")
+        let buildRoot = context.pluginWorkDirectory.appending("build")
+        let moduleCacheDir = context.pluginWorkDirectory.appending("clang-module-cache")
+        let tempDir = context.pluginWorkDirectory.appending("tmp")
+
+        environment["FFMPEG_CACHE_DIR"] = cacheDir.string
+        environment["FFMPEG_OUTPUT_DIR"] = outputDir.string
+        environment["FFMPEG_BUILD_ROOT_BASE"] = buildRoot.string
+        environment["FFMPEG_MODULE_CACHE_DIR"] = moduleCacheDir.string
+        environment["FFMPEG_TMP_DIR"] = tempDir.string
         process.environment = environment
 
         let pipe = Pipe()

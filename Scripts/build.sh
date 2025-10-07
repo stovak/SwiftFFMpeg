@@ -25,6 +25,15 @@ SOURCE_ARCHIVE_PATH="$CACHE_DIR/$FFMPEG_ARCHIVE"
 
 mkdir -p "$CACHE_DIR"
 
+MODULE_CACHE_DIR="${FFMPEG_MODULE_CACHE_DIR:-$CACHE_DIR/clang-module-cache}"
+TMP_DIR_OVERRIDE="${FFMPEG_TMP_DIR:-$CACHE_DIR/tmp}"
+
+mkdir -p "$MODULE_CACHE_DIR" "$TMP_DIR_OVERRIDE"
+
+export MODULE_CACHE_DIR="$MODULE_CACHE_DIR"
+export CLANG_MODULE_CACHE_PATH="$MODULE_CACHE_DIR"
+export TMPDIR="$TMP_DIR_OVERRIDE"
+
 download_ffmpeg_source() {
   local url="$1"
   local destination="$2"
