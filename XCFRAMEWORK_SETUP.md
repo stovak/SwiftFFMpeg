@@ -38,13 +38,16 @@ SwiftFFmpeg Package
 
 ## Local Development Setup
 
+> **Toolchain requirement:** Install Swift 6.0 (Xcode 16.2 or newer on macOS) before running the build plugin or package commands.
+
 ### First Time Setup
 
 1. Clone the repository
 2. Build the XCFrameworks:
    ```bash
-   swift package plugin build-ffmpeg
+   SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg
    ```
+   The environment variable allows the plugin to run before any XCFrameworks exist by skipping SwiftPM's binary target validation. The plugin downloads the official FFmpeg 8.0 release archive from the GitHub `FFmpeg/FFmpeg` repository—automatically retrying and falling back to the `codeload.github.com` mirror if necessary—compiles the required libraries for your host architecture, and copies the resulting slices to `xcframework/`. Set `FFMPEG_SOURCE_URL` when you must point the build at an internal mirror.
 3. The frameworks will be placed in `xcframework/` directory
 4. Build your project:
    ```bash
@@ -60,7 +63,13 @@ Once XCFrameworks are built, they're cached in `xcframework/`. You only need to 
 
 To force a rebuild:
 ```bash
-swift package plugin build-ffmpeg --force
+SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg --force
+```
+
+Specify a target architecture explicitly when coordinating automation (for example, GitHub Actions matrix builds):
+
+```bash
+SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg --force --arch arm64
 ```
 
 ## Distribution Setup (Advanced)
@@ -78,38 +87,25 @@ xcframework/
 
 ### Option 2: Use Remote Binary Targets (Recommended)
 
-1. Build XCFrameworks locally
+1. Build XCFrameworks locally or download them from the GitHub Actions `ffmpeg-universal` artifact
 2. Package them with checksums:
    ```bash
    ./Scripts/package_xcframeworks.sh
    ```
-3. Upload the generated `.zip` files to GitHub Releases
+   Set `ARTIFACT_SUFFIX` (for example, `-arm64`) when packaging single-architecture slices during CI runs.
+3. Upload the generated `.zip` files to GitHub Releases or another binary registry. The `Build FFmpeg XCFrameworks` workflow will do this automatically when a GitHub Release is published.
 4. Update `Package.swift` to use remote URLs:
    ```swift
    .binaryTarget(
      name: "libavcodec",
-     url: "https://github.com/YOUR_USERNAME/SwiftFFMpeg/releases/download/v1.0.0/libavcodec.xcframework.zip",
+     url: "https://github.com/YOUR_ORG/SwiftFFMpeg/releases/download/v1.0.0/libavcodec.xcframework.zip",
      checksum: "CHECKSUM_FROM_SCRIPT"
    ),
    ```
 
 ## Architecture Support
 
-Currently, the build scripts create **single-architecture** XCFrameworks:
-- **arm64** (Apple Silicon Macs)
-- **x86_64** (Intel Macs)
-
-The XCFramework is built for your current architecture automatically.
-
-### Building Universal XCFrameworks
-
-To create XCFrameworks supporting both architectures:
-
-1. Build on arm64 Mac → creates `macos-arm64` slice
-2. Build on x86_64 Mac → creates `macos-x86_64` slice
-3. Combine using `xcodebuild -create-xcframework` with both slices
-
-This requires access to both architectures or cross-compilation setup.
+The build scripts emit **single-architecture** slices (`macos-arm64` and `macos-x86_64`). The CI workflow automatically merges both slices into universal XCFrameworks and regenerates `Info.plist` metadata using `Scripts/update_xcframework_info.sh`. When running manually you can combine slices by copying the per-architecture directories into a single `.xcframework` directory and re-running the script to refresh the manifest.
 
 ## Troubleshooting
 
@@ -117,7 +113,7 @@ This requires access to both architectures or cross-compilation setup.
 
 The XCFrameworks haven't been built yet. Run:
 ```bash
-swift package plugin build-ffmpeg
+SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg
 ```
 
 ### Import Errors in Swift Code

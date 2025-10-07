@@ -10,15 +10,15 @@ A Swift wrapper for the FFmpeg API.
 
 ### Prerequisites
 
-You need to install [FFmpeg](http://ffmpeg.org/) (Requires FFmpeg 8.0 or higher) before using this library. On macOS:
-
-```bash
-brew install ffmpeg
-```
+- macOS with Xcode 15 or newer
+- Command Line Tools (`xcode-select --install`)
+- Approximately 15 GB of free disk space when compiling FFmpeg locally
 
 ### Swift Package Manager
 
 SwiftFFmpeg uses [SwiftPM](https://swift.org/package-manager/) as its build tool and bundles FFmpeg as XCFrameworks for a self-contained, portable installation.
+
+> **Swift toolchain requirement:** SwiftFFmpeg now requires Swift tools version 6.0 or newer. On macOS this corresponds to Xcode 16.2 or later.
 
 To depend on SwiftFFmpeg in your own project, add a `dependencies` clause to your `Package.swift`:
 
@@ -37,37 +37,46 @@ The package requires pre-built XCFrameworks. You have two options:
 #### Option 1: Using the Plugin (Recommended)
 
 ```bash
-swift package plugin build-ffmpeg
+SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg
 ```
 
-This will:
-- Clone FFmpeg 7.1 from the official git repository
-- Compile for your architecture (arm64 or x86_64)
-- Build XCFrameworks with proper structure
-- Place frameworks in `xcframework/` directory
-- Automatically make them available to the package
+> The environment variable temporarily disables SwiftPM's binary target validation so the plugin can bootstrap the XCFrameworks from a clean checkout. Once the frameworks exist under `xcframework/`, the variable is no longer required for subsequent rebuilds.
 
-**Note:** Building takes 10-30 minutes depending on your machine.
+The plugin orchestrates `Scripts/build.sh` to:
+
+- Download the official FFmpeg `FFmpeg-n8.0.tar.gz` source archive from the [FFmpeg GitHub repository](https://github.com/FFmpeg/FFmpeg)
+- Compile every required library slice for your host architecture (either `arm64` or `x86_64`)
+- Produce XCFramework slices for `libavcodec`, `libavdevice`, `libavfilter`, `libavformat`, `libavutil`, `libpostproc`, `libswresample`, and `libswscale`
+- Copy the resulting frameworks into the repository’s `xcframework/` directory so SwiftPM can resolve the binary targets
+
+Use `--force` to rebuild from scratch or pass `--arch` explicitly when driving the plugin from automation:
+
+```bash
+SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg --force --arch arm64
+```
+
+> Building FFmpeg locally typically takes 15–30 minutes on GitHub Actions hardware and less on Apple Silicon desktops. The script caches the downloaded source archive to avoid repeated network fetches.
 
 #### Option 2: Manual Build
 
-Run the build script directly:
+Run the build script directly when you prefer not to invoke the plugin (for example, inside CI containers):
 
 ```bash
 ./Scripts/build.sh
 ```
 
-The build process:
-1. Clones FFmpeg from `https://git.ffmpeg.org/ffmpeg.git` (release/7.1 branch)
-2. Configures and compiles FFmpeg with GPL support
-3. Creates framework structures for all FFmpeg libraries (libavcodec, libavdevice, libavfilter, libavformat, libavutil, libpostproc, libswresample, libswscale)
-4. Builds architecture-specific XCFrameworks in `output/xcframework/`
+Key behaviours of the script:
 
-After building, copy the frameworks:
+1. Downloads the FFmpeg 8.0 release tarball from GitHub (retrying automatically and falling back to the `codeload.github.com` mirror if the primary host is temporarily unavailable). Override `FFMPEG_SOURCE_URL` when you need to point at an internal mirror.
+2. Configures and compiles FFmpeg for each architecture requested via the `ARCHS` environment variable (defaults to the host architecture)
+3. Builds framework bundles for all FFmpeg libraries in `output/<arch>/framework`
+4. Emits XCFramework slices under `output/xcframework/`
+
+Copy the generated slices into the repository root if you want SwiftPM to consume them immediately:
 
 ```bash
 mkdir -p xcframework
-cp -R output/xcframework/* xcframework/
+rsync -a output/xcframework/ xcframework/
 ```
 
 ### Packaging for Distribution (Advanced)
@@ -78,7 +87,24 @@ To create distributable zip files with checksums for remote hosting:
 ./Scripts/package_xcframeworks.sh
 ```
 
-This creates zip files and checksums for each XCFramework, which can be uploaded to GitHub Releases or other hosting and referenced via URL in `Package.swift` using `.binaryTarget` with remote URLs.
+Set `ARTIFACT_SUFFIX` to distinguish per-architecture slices when archiving automation output:
+
+```bash
+ARTIFACT_SUFFIX="-arm64" ./Scripts/package_xcframeworks.sh build-artifacts
+```
+
+The script emits zipped XCFrameworks alongside SwiftPM checksums. Upload the zipped bundles to your preferred distribution channel and wire them into `Package.swift` using `.binaryTarget(url:checksum:)` once they are published.
+
+### Continuous Integration and Releases
+
+The repository includes a `Build FFmpeg XCFrameworks` GitHub Actions workflow that runs on pushes, pull requests, manual dispatches, and published releases. The workflow:
+
+1. Builds FFmpeg slices on `macos-13` (Intel) and `macos-14` (Apple Silicon) runners via the package plugin
+2. Packages architecture-specific artifacts and publishes them as workflow artifacts
+3. Merges the slices into universal XCFrameworks with refreshed metadata
+4. Uploads the universal zips and checksums for later consumption and automatically attaches them to GitHub Releases when triggered by a published release
+
+These artifacts serve as the canonical source-of-truth binaries that downstream consumers can reference without rebuilding FFmpeg locally.
 
 ## Documentation
 

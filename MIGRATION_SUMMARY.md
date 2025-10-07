@@ -19,10 +19,12 @@ This project has been updated from using **systemLibrary** targets (requiring Ho
   - libswscale.xcframework
 - **Modified**: `CFFmpeg` target now depends on binary targets instead of system libraries
 - **Added**: Platform specification `platforms: [.macOS(.v10_15)]`
+- **Updated**: `swift-tools-version` raised to `6.0`
 
 ### 2. Build Scripts
 - **Modified**: `Scripts/build_framework.sh` - removed individual zip creation
 - **Added**: `Scripts/package_xcframeworks.sh` - centralized packaging with checksums
+- **Updated**: `Scripts/build.sh` now retries GitHub downloads and falls back to the `codeload.github.com` mirror for FFmpeg sources.
 
 ### 3. Documentation
 - **Updated**: README.md with new installation instructions
@@ -32,6 +34,11 @@ This project has been updated from using **systemLibrary** targets (requiring Ho
 ### 4. Source Code
 - **No changes needed**: Swift code continues to `import CFFmpeg` and `import SwiftFFmpeg` as before
 - CFFmpeg shim headers remain in place for Swift compatibility
+
+## Toolchain Requirements
+
+- Swift tools version **6.0** or newer (Xcode 16.2+ on macOS)
+- Command-line builds must use a Swift 6-compatible toolchain when invoking SwiftPM or the build plugin
 
 ## Migration Path for Users
 
@@ -53,7 +60,7 @@ swift build
 .package(url: "https://github.com/stovak/SwiftFFmpeg.git", from: "1.0.1")
 
 # Build XCFrameworks (one-time, or when updating FFmpeg)
-swift package plugin build-ffmpeg
+SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg
 
 # Build
 swift build
@@ -78,7 +85,7 @@ Users must:
 ## Next Steps
 
 ### For Development
-1. Build XCFrameworks: `swift package plugin build-ffmpeg`
+1. Build XCFrameworks: `SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg`
 2. Develop normally: `swift build`, `swift test`
 
 ### For Distribution (Optional)
@@ -89,8 +96,8 @@ Users must:
 
 ## Testing Checklist
 
-- [ ] Run `swift package plugin build-ffmpeg` on arm64 Mac
-- [ ] Run `swift package plugin build-ffmpeg` on x86_64 Mac (if available)
+- [ ] Run `SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg` on arm64 Mac
+- [ ] Run `SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg` on x86_64 Mac (if available)
 - [ ] Verify `swift build` succeeds after XCFrameworks are built
 - [ ] Verify `swift test` passes
 - [ ] Test Examples target builds and runs

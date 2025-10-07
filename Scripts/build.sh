@@ -1,58 +1,120 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-FFMPEG_VERSION=7.1
-FFMPEG_GIT_URL="https://git.ffmpeg.org/ffmpeg.git"
-FFMPEG_BRANCH="release/$FFMPEG_VERSION"
-FFMPEG_SOURCE_DIR="FFmpeg-release-$FFMPEG_VERSION"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+FFMPEG_VERSION=${FFMPEG_VERSION:-8.0}
+FFMPEG_ARCHIVE=${FFMPEG_ARCHIVE:-"FFmpeg-n$FFMPEG_VERSION.tar.gz"}
+FFMPEG_SOURCE_URL=${FFMPEG_SOURCE_URL:-"https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n$FFMPEG_VERSION.tar.gz"}
 FFMPEG_LIBS="libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale"
-PREFIX=`pwd`/output
 
-# Detect architecture if not specified
-if [ -z "$ARCH" ]; then
-    ARCH=$(uname -m)
+HOST_ARCH=$(uname -m)
+ARCHS_ENV=${ARCHS:-${ARCH:-$HOST_ARCH}}
+IFS=' ' read -r -a REQUESTED_ARCHS <<<"$ARCHS_ENV"
+
+if [ ${#REQUESTED_ARCHS[@]} -eq 0 ]; then
+  echo "No architectures requested for build"
+  exit 1
 fi
 
-echo "Building FFmpeg $FFMPEG_VERSION for architecture: $ARCH"
+CACHE_DIR="${FFMPEG_CACHE_DIR:-$ROOT_DIR/.ffmpeg-cache}"
+SOURCE_ARCHIVE_PATH="$CACHE_DIR/$FFMPEG_ARCHIVE"
 
-# Clone FFmpeg if not already cloned
-if [ ! -d "$FFMPEG_SOURCE_DIR" ]; then
-  echo "Cloning FFmpeg from git (branch: $FFMPEG_BRANCH)..."
-  git clone --branch "$FFMPEG_BRANCH" --depth 1 "$FFMPEG_GIT_URL" "$FFMPEG_SOURCE_DIR" || exit 1
+mkdir -p "$CACHE_DIR"
+
+download_ffmpeg_source() {
+  local url="$1"
+  local destination="$2"
+
+  echo "Attempting download from $url"
+
+  local temp_file
+  temp_file="${destination}.partial"
+  rm -f "$temp_file"
+
+  if curl -fSL --retry 5 --retry-delay 2 --retry-connrefused --retry-all-errors "$url" -o "$temp_file"; then
+    mv "$temp_file" "$destination"
+    return 0
+  fi
+
+  echo "Download failed from $url" >&2
+  rm -f "$temp_file"
+  return 1
+}
+
+if [ ! -f "$SOURCE_ARCHIVE_PATH" ]; then
+  echo "Downloading FFmpeg $FFMPEG_VERSION source"
+
+  FALLBACK_URL="https://codeload.github.com/FFmpeg/FFmpeg/tar.gz/refs/tags/n$FFMPEG_VERSION"
+  CANDIDATE_URLS=("$FFMPEG_SOURCE_URL")
+
+  if [[ "$FALLBACK_URL" != "$FFMPEG_SOURCE_URL" ]]; then
+    CANDIDATE_URLS+=("$FALLBACK_URL")
+  fi
+
+  DOWNLOAD_SUCCEEDED=false
+  for URL in "${CANDIDATE_URLS[@]}"; do
+    if download_ffmpeg_source "$URL" "$SOURCE_ARCHIVE_PATH"; then
+      DOWNLOAD_SUCCEEDED=true
+      break
+    fi
+  done
+
+  if [ "$DOWNLOAD_SUCCEEDED" != true ]; then
+    echo "Unable to download FFmpeg sources. If you are running in a restricted network environment, set FFMPEG_SOURCE_URL to a reachable mirror." >&2
+    exit 1
+  fi
 else
-  echo "FFmpeg source already exists at $FFMPEG_SOURCE_DIR"
-  echo "To force re-clone, delete the directory and run again"
+  echo "Using cached FFmpeg archive at $SOURCE_ARCHIVE_PATH"
 fi
 
-echo "Start compiling FFmpeg..."
+OUTPUT_DIR="${FFMPEG_OUTPUT_DIR:-$ROOT_DIR/output}"
+rm -rf "$OUTPUT_DIR"
+mkdir -p "$OUTPUT_DIR"
 
-rm -rf $PREFIX
-cd $FFMPEG_SOURCE_DIR
+for ARCH in "${REQUESTED_ARCHS[@]}"; do
+  if [ "$ARCH" != "$HOST_ARCH" ]; then
+    echo "Building FFmpeg for $ARCH on $HOST_ARCH host"
+    echo "Ensure you are running on hardware that matches the requested architecture or configure cross-compilation manually."
+  fi
 
-./configure \
-  --prefix=$PREFIX \
-  --enable-gpl \
-  --enable-version3 \
-  --disable-programs \
-  --disable-doc \
-  --arch=$ARCH \
-  --extra-cflags="-arch $ARCH -march=native -fno-stack-check" \
-  --disable-debug || exit 1
+  BUILD_ROOT_BASE="${FFMPEG_BUILD_ROOT_BASE:-$ROOT_DIR/.build/ffmpeg}"
+  BUILD_ROOT="$BUILD_ROOT_BASE-$ARCH"
+  INSTALL_PREFIX="$OUTPUT_DIR/$ARCH/install"
 
-make clean
-make -j8 install || exit 1
+  echo "Preparing build workspace for $ARCH at $BUILD_ROOT"
+  rm -rf "$BUILD_ROOT"
+  mkdir -p "$BUILD_ROOT"
+  tar -xf "$SOURCE_ARCHIVE_PATH" -C "$BUILD_ROOT" --strip-components=1
 
-cd ..
+  pushd "$BUILD_ROOT" >/dev/null
 
-# Build frameworks for each library
-for LIB in $FFMPEG_LIBS; do
-  echo "Building framework for $LIB..."
-  ./Scripts/build_framework.sh $PREFIX $LIB $FFMPEG_VERSION || exit 1
+  echo "Configuring FFmpeg $FFMPEG_VERSION for $ARCH"
+  ./configure \
+    --prefix="$INSTALL_PREFIX" \
+    --enable-gpl \
+    --enable-version3 \
+    --disable-programs \
+    --disable-doc \
+    --arch="$ARCH" \
+    --target-os=darwin \
+    --cc=clang \
+    --extra-cflags="-arch $ARCH -fno-stack-check" \
+    --extra-ldflags="-arch $ARCH" \
+    --disable-debug
+
+  make clean
+  make -j$(sysctl -n hw.ncpu 2>/dev/null || nproc) install
+
+  popd >/dev/null
+
+  echo "Creating XCFramework slices for $ARCH"
+  for LIB in $FFMPEG_LIBS; do
+    "$SCRIPT_DIR/build_framework.sh" "$INSTALL_PREFIX" "$LIB" "$FFMPEG_VERSION" "$ARCH" "$OUTPUT_DIR"
+  done
 done
 
 echo "FFmpeg compilation completed successfully!"
-echo "Frameworks built in: $PREFIX/xcframework/"
-echo ""
-echo "To use these frameworks, ensure they are available at: xcframework/"
-echo "You can copy them with: mkdir -p xcframework && cp -R $PREFIX/xcframework/* xcframework/"
+echo "Framework slices are available in: $OUTPUT_DIR/xcframework"

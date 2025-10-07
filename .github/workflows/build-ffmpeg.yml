@@ -1,0 +1,135 @@
+name: Build FFmpeg XCFrameworks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build slices (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: x86_64
+          - runner: macos-15
+            arch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.2"
+
+      - name: Verify Swift 6 toolchain
+        run: |
+          set -euo pipefail
+          SWIFT_OUTPUT="$(swift --version)"
+          echo "$SWIFT_OUTPUT"
+          SWIFT_VERSION="$(printf '%s\n' "$SWIFT_OUTPUT" | grep -m1 'Apple Swift version' | awk '{print $4}' || true)"
+          SWIFT_MAJOR="${SWIFT_VERSION%%.*}"
+          if [ -z "$SWIFT_MAJOR" ] || [ "$SWIFT_MAJOR" -lt 6 ]; then
+            echo "Swift 6 or newer is required to precompile FFmpeg. Detected version: ${SWIFT_VERSION:-unknown}" >&2
+            exit 1
+          fi
+
+      - name: Build FFmpeg libraries
+        env:
+          SWIFT_FFMPEG_SKIP_BINARIES: "1"
+        run: |
+          swift package plugin build-ffmpeg --force --arch ${{ matrix.arch }}
+
+      - name: Package build outputs
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/${{ matrix.arch }}
+          rsync -a output/ artifacts/${{ matrix.arch }}/output/
+          ARTIFACT_SUFFIX="-${{ matrix.arch }}" ./Scripts/package_xcframeworks.sh artifacts/${{ matrix.arch }}/packages
+
+      - name: Upload slice artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-${{ matrix.arch }}
+          path: artifacts/${{ matrix.arch }}
+
+  bundle:
+    name: Assemble universal xcframeworks
+    needs: build
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.2"
+
+      - name: Verify Swift 6 toolchain
+        run: |
+          set -euo pipefail
+          SWIFT_OUTPUT="$(swift --version)"
+          echo "$SWIFT_OUTPUT"
+          SWIFT_VERSION="$(printf '%s\n' "$SWIFT_OUTPUT" | grep -m1 'Apple Swift version' | awk '{print $4}' || true)"
+          SWIFT_MAJOR="${SWIFT_VERSION%%.*}"
+          if [ -z "$SWIFT_MAJOR" ] || [ "$SWIFT_MAJOR" -lt 6 ]; then
+            echo "Swift 6 or newer is required to assemble universal FFmpeg artifacts. Detected version: ${SWIFT_VERSION:-unknown}" >&2
+            exit 1
+          fi
+
+      - name: Download slice artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ffmpeg-*
+          path: slices
+          merge-multiple: false
+
+      - name: Merge XCFramework slices
+        run: |
+          set -euo pipefail
+          LIBS="libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale"
+          mkdir -p universal/xcframework
+          for LIB in $LIBS; do
+            ARM_DIR="slices/ffmpeg-arm64/output/xcframework/${LIB}.xcframework"
+            X86_DIR="slices/ffmpeg-x86_64/output/xcframework/${LIB}.xcframework"
+            if [ ! -d "$ARM_DIR" ]; then
+              echo "Missing arm64 slice for $LIB" >&2
+              exit 1
+            fi
+            if [ ! -d "$X86_DIR" ]; then
+              echo "Missing x86_64 slice for $LIB" >&2
+              exit 1
+            fi
+
+            DEST="universal/xcframework/${LIB}.xcframework"
+            rm -rf "$DEST"
+            mkdir -p "$DEST"
+            rsync -a "$ARM_DIR/" "$DEST/"
+            rsync -a "$X86_DIR/macos-x86_64" "$DEST/"
+            Scripts/update_xcframework_info.sh "$DEST" "$LIB"
+          done
+
+          ARTIFACT_SUFFIX="" ./Scripts/package_xcframeworks.sh universal/artifacts
+
+      - name: Upload universal artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ffmpeg-universal
+          path: universal/artifacts
+
+      - name: Publish release assets
+        if: github.event_name == 'release' && github.event.action == 'published'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG=${{ github.event.release.tag_name }}
+          for FILE in universal/artifacts/*.zip universal/artifacts/*.zip.checksum; do
+            gh release upload "$TAG" "$FILE" --clobber
+          done
