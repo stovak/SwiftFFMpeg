@@ -16,22 +16,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-13
+          - runner: macos-15
             arch: x86_64
-          - runner: macos-14
+          - runner: macos-15
             arch: arm64
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode version
-        run: |
-          set -euo pipefail
-          if [ -d "/Applications/Xcode_16.2.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-          else
-            echo "Xcode 16.2 is required for Swift 6 toolchains" >&2
-            exit 1
-          fi
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.2"
 
       - name: Build FFmpeg libraries
         env:
@@ -55,19 +50,14 @@ jobs:
   bundle:
     name: Assemble universal xcframeworks
     needs: build
-    runs-on: macos-13
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode version
-        run: |
-          set -euo pipefail
-          if [ -d "/Applications/Xcode_16.2.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-          else
-            echo "Xcode 16.2 is required for Swift 6 toolchains" >&2
-            exit 1
-          fi
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.2"
 
       - name: Download slice artifacts
         uses: actions/download-artifact@v4
