@@ -44,7 +44,7 @@ SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg
 
 The plugin orchestrates `Scripts/build.sh` to:
 
-- Download the official FFmpeg `FFmpeg-n8.1.tar.gz` source archive from the [FFmpeg GitHub repository](https://github.com/FFmpeg/FFmpeg)
+- Download the official FFmpeg `FFmpeg-n8.0.tar.gz` source archive from the [FFmpeg GitHub repository](https://github.com/FFmpeg/FFmpeg)
 - Compile every required library slice for your host architecture (either `arm64` or `x86_64`)
 - Produce XCFramework slices for `libavcodec`, `libavdevice`, `libavfilter`, `libavformat`, `libavutil`, `libpostproc`, `libswresample`, and `libswscale`
 - Copy the resulting frameworks into the repository’s `xcframework/` directory so SwiftPM can resolve the binary targets
@@ -67,7 +67,7 @@ Run the build script directly when you prefer not to invoke the plugin (for exam
 
 Key behaviours of the script:
 
-1. Downloads the FFmpeg 8.1 release tarball from `https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.1.tar.gz`
+1. Downloads the FFmpeg 8.0 release tarball from `https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.0.tar.gz`
 2. Configures and compiles FFmpeg for each architecture requested via the `ARCHS` environment variable (defaults to the host architecture)
 3. Builds framework bundles for all FFmpeg libraries in `output/<arch>/framework`
 4. Emits XCFramework slices under `output/xcframework/`
