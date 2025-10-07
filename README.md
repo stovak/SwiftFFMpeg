@@ -67,7 +67,7 @@ Run the build script directly when you prefer not to invoke the plugin (for exam
 
 Key behaviours of the script:
 
-1. Downloads the FFmpeg 8.0 release tarball from `https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n8.0.tar.gz`
+1. Downloads the FFmpeg 8.0 release tarball from GitHub (retrying automatically and falling back to the `codeload.github.com` mirror if the primary host is temporarily unavailable). Override `FFMPEG_SOURCE_URL` when you need to point at an internal mirror.
 2. Configures and compiles FFmpeg for each architecture requested via the `ARCHS` environment variable (defaults to the host architecture)
 3. Builds framework bundles for all FFmpeg libraries in `output/<arch>/framework`
 4. Emits XCFramework slices under `output/xcframework/`

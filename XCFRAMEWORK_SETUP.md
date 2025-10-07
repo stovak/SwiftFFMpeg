@@ -47,7 +47,7 @@ SwiftFFmpeg Package
    ```bash
    SWIFT_FFMPEG_SKIP_BINARIES=1 swift package plugin build-ffmpeg
    ```
-   The environment variable allows the plugin to run before any XCFrameworks exist by skipping SwiftPM's binary target validation. The plugin downloads the official FFmpeg 8.0 release archive from the GitHub `FFmpeg/FFmpeg` repository, compiles the required libraries for your host architecture, and copies the resulting slices to `xcframework/`.
+   The environment variable allows the plugin to run before any XCFrameworks exist by skipping SwiftPM's binary target validation. The plugin downloads the official FFmpeg 8.0 release archive from the GitHub `FFmpeg/FFmpeg` repository—automatically retrying and falling back to the `codeload.github.com` mirror if necessary—compiles the required libraries for your host architecture, and copies the resulting slices to `xcframework/`. Set `FFMPEG_SOURCE_URL` when you must point the build at an internal mirror.
 3. The frameworks will be placed in `xcframework/` directory
 4. Build your project:
    ```bash

@@ -24,9 +24,48 @@ SOURCE_ARCHIVE_PATH="$CACHE_DIR/$FFMPEG_ARCHIVE"
 
 mkdir -p "$CACHE_DIR"
 
+download_ffmpeg_source() {
+  local url="$1"
+  local destination="$2"
+
+  echo "Attempting download from $url"
+
+  local temp_file
+  temp_file="${destination}.partial"
+  rm -f "$temp_file"
+
+  if curl -fSL --retry 5 --retry-delay 2 --retry-connrefused --retry-all-errors "$url" -o "$temp_file"; then
+    mv "$temp_file" "$destination"
+    return 0
+  fi
+
+  echo "Download failed from $url" >&2
+  rm -f "$temp_file"
+  return 1
+}
+
 if [ ! -f "$SOURCE_ARCHIVE_PATH" ]; then
-  echo "Downloading FFmpeg $FFMPEG_VERSION source from $FFMPEG_SOURCE_URL"
-  curl -L "$FFMPEG_SOURCE_URL" -o "$SOURCE_ARCHIVE_PATH"
+  echo "Downloading FFmpeg $FFMPEG_VERSION source"
+
+  FALLBACK_URL="https://codeload.github.com/FFmpeg/FFmpeg/tar.gz/refs/tags/n$FFMPEG_VERSION"
+  CANDIDATE_URLS=("$FFMPEG_SOURCE_URL")
+
+  if [[ "$FALLBACK_URL" != "$FFMPEG_SOURCE_URL" ]]; then
+    CANDIDATE_URLS+=("$FALLBACK_URL")
+  fi
+
+  DOWNLOAD_SUCCEEDED=false
+  for URL in "${CANDIDATE_URLS[@]}"; do
+    if download_ffmpeg_source "$URL" "$SOURCE_ARCHIVE_PATH"; then
+      DOWNLOAD_SUCCEEDED=true
+      break
+    fi
+  done
+
+  if [ "$DOWNLOAD_SUCCEEDED" != true ]; then
+    echo "Unable to download FFmpeg sources. If you are running in a restricted network environment, set FFMPEG_SOURCE_URL to a reachable mirror." >&2
+    exit 1
+  fi
 else
   echo "Using cached FFmpeg archive at $SOURCE_ARCHIVE_PATH"
 fi
