@@ -65,7 +65,7 @@ struct BuildFFmpegPlugin: CommandPlugin {
         SCRIPTS_DIR="\(scriptsDir.string)"
         PACKAGE_DIR="\(packageDir.string)"
 
-        echo "Building FFmpeg frameworks from the official GitHub archive..."
+        echo "Building FFmpeg frameworks from GitHub sources..."
         echo "Architectures: \(archList.isEmpty ? "default" : archList)"
         echo ""
 

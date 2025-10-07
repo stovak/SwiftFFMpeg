@@ -67,7 +67,7 @@ Run the build script directly when you prefer not to invoke the plugin (for exam
 
 Key behaviours of the script:
 
-1. Downloads the FFmpeg 8.0 release tarball from GitHub (retrying automatically and falling back to the `codeload.github.com` mirror if the primary host is temporarily unavailable). Override `FFMPEG_SOURCE_URL` when you need to point at an internal mirror.
+1. Uses a pre-cloned FFmpeg source directory when `FFMPEG_SOURCE_DIR` is set (ideal for CI environments that fetch the repository separately) or downloads the FFmpeg 8.0 release tarball from GitHub (retrying automatically, authenticating with `GITHUB_TOKEN` when available, and falling back to the `codeload.github.com` and API tarball mirrors if the primary host is temporarily unavailable). Override `FFMPEG_SOURCE_URL` when you need to point at an internal mirror.
 2. Configures and compiles FFmpeg for each architecture requested via the `ARCHS` environment variable (defaults to the host architecture)
 3. Builds framework bundles for all FFmpeg libraries in `output/<arch>/framework`
 4. Emits XCFramework slices under `output/xcframework/`
@@ -99,10 +99,13 @@ The script emits zipped XCFrameworks alongside SwiftPM checksums. Upload the zip
 
 The repository includes a `Build FFmpeg XCFrameworks` GitHub Actions workflow that runs on pushes, pull requests, manual dispatches, and published releases. The workflow:
 
-1. Builds FFmpeg slices on `macos-13` (Intel) and `macos-14` (Apple Silicon) runners via the package plugin
-2. Packages architecture-specific artifacts and publishes them as workflow artifacts
-3. Merges the slices into universal XCFrameworks with refreshed metadata
-4. Uploads the universal zips and checksums for later consumption and automatically attaches them to GitHub Releases when triggered by a published release
+1. Checks out the FFmpeg 8.0 sources alongside SwiftFFMpeg and points the build plugin at the local checkout to avoid network flakiness when downloading from GitHub during CI
+2. Builds FFmpeg slices on `macos-15` runners for both Intel and Apple Silicon via the package plugin
+3. Packages architecture-specific artifacts and publishes them as workflow artifacts
+4. Merges the slices into universal XCFrameworks with refreshed metadata
+5. Uploads the universal zips and checksums for later consumption and automatically attaches them to GitHub Releases when triggered by a published release
+
+GitHub provides a `GITHUB_TOKEN` to every workflow run, so no additional repository permissions are required for the checkout steps or authenticated source downloads described above. Override `FFMPEG_SOURCE_URL` only when your network requires an internal mirror.
 
 These artifacts serve as the canonical source-of-truth binaries that downstream consumers can reference without rebuilding FFmpeg locally.
 

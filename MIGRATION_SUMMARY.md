@@ -24,7 +24,7 @@ This project has been updated from using **systemLibrary** targets (requiring Ho
 ### 2. Build Scripts
 - **Modified**: `Scripts/build_framework.sh` - removed individual zip creation
 - **Added**: `Scripts/package_xcframeworks.sh` - centralized packaging with checksums
-- **Updated**: `Scripts/build.sh` now retries GitHub downloads and falls back to the `codeload.github.com` mirror for FFmpeg sources.
+- **Updated**: `Scripts/build.sh` now supports using a pre-cloned FFmpeg source directory (via `FFMPEG_SOURCE_DIR`), retries GitHub downloads with `GITHUB_TOKEN` authentication when available, and falls back to both `codeload.github.com` and API tarball mirrors for FFmpeg sources.
 
 ### 3. Documentation
 - **Updated**: README.md with new installation instructions
