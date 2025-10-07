@@ -28,6 +28,18 @@ jobs:
         with:
           xcode-version: "16.2"
 
+      - name: Verify Swift 6 toolchain
+        run: |
+          set -euo pipefail
+          SWIFT_OUTPUT="$(swift --version)"
+          echo "$SWIFT_OUTPUT"
+          SWIFT_VERSION="$(printf '%s\n' "$SWIFT_OUTPUT" | grep -m1 'Apple Swift version' | awk '{print $4}' || true)"
+          SWIFT_MAJOR="${SWIFT_VERSION%%.*}"
+          if [ -z "$SWIFT_MAJOR" ] || [ "$SWIFT_MAJOR" -lt 6 ]; then
+            echo "Swift 6 or newer is required to precompile FFmpeg. Detected version: ${SWIFT_VERSION:-unknown}" >&2
+            exit 1
+          fi
+
       - name: Build FFmpeg libraries
         env:
           SWIFT_FFMPEG_SKIP_BINARIES: "1"
@@ -58,6 +70,18 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "16.2"
+
+      - name: Verify Swift 6 toolchain
+        run: |
+          set -euo pipefail
+          SWIFT_OUTPUT="$(swift --version)"
+          echo "$SWIFT_OUTPUT"
+          SWIFT_VERSION="$(printf '%s\n' "$SWIFT_OUTPUT" | grep -m1 'Apple Swift version' | awk '{print $4}' || true)"
+          SWIFT_MAJOR="${SWIFT_VERSION%%.*}"
+          if [ -z "$SWIFT_MAJOR" ] || [ "$SWIFT_MAJOR" -lt 6 ]; then
+            echo "Swift 6 or newer is required to assemble universal FFmpeg artifacts. Detected version: ${SWIFT_VERSION:-unknown}" >&2
+            exit 1
+          fi
 
       - name: Download slice artifacts
         uses: actions/download-artifact@v4

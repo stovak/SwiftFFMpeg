@@ -20,8 +20,17 @@ jobs:
       with:
         xcode-version: "16.2"
 
-    - name: Show Swift version
-      run: swift --version
+    - name: Verify Swift 6 toolchain
+      run: |
+        set -euo pipefail
+        SWIFT_OUTPUT="$(swift --version)"
+        echo "$SWIFT_OUTPUT"
+        SWIFT_VERSION="$(printf '%s\n' "$SWIFT_OUTPUT" | grep -m1 'Apple Swift version' | awk '{print $4}' || true)"
+        SWIFT_MAJOR="${SWIFT_VERSION%%.*}"
+        if [ -z "$SWIFT_MAJOR" ] || [ "$SWIFT_MAJOR" -lt 6 ]; then
+          echo "Swift 6 or newer is required before building FFmpeg. Detected version: ${SWIFT_VERSION:-unknown}" >&2
+          exit 1
+        fi
 
     - name: Build FFmpeg XCFrameworks
       env:
