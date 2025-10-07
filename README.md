@@ -18,6 +18,8 @@ A Swift wrapper for the FFmpeg API.
 
 SwiftFFmpeg uses [SwiftPM](https://swift.org/package-manager/) as its build tool and bundles FFmpeg as XCFrameworks for a self-contained, portable installation.
 
+> **Swift toolchain requirement:** SwiftFFmpeg now requires Swift tools version 6.0 or newer. On macOS this corresponds to Xcode 16.2 or later.
+
 To depend on SwiftFFmpeg in your own project, add a `dependencies` clause to your `Package.swift`:
 
 ```swift

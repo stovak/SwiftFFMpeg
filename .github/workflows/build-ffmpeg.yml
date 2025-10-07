@@ -23,6 +23,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Select Xcode version
+        run: |
+          set -euo pipefail
+          if [ -d "/Applications/Xcode_16.2.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          else
+            echo "Xcode 16.2 is required for Swift 6 toolchains" >&2
+            exit 1
+          fi
+
       - name: Build FFmpeg libraries
         env:
           SWIFT_FFMPEG_SKIP_BINARIES: "1"
@@ -48,6 +58,16 @@ jobs:
     runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: |
+          set -euo pipefail
+          if [ -d "/Applications/Xcode_16.2.app" ]; then
+            sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          else
+            echo "Xcode 16.2 is required for Swift 6 toolchains" >&2
+            exit 1
+          fi
 
       - name: Download slice artifacts
         uses: actions/download-artifact@v4

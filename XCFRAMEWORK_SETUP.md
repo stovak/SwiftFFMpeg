@@ -38,6 +38,8 @@ SwiftFFmpeg Package
 
 ## Local Development Setup
 
+> **Toolchain requirement:** Install Swift 6.0 (Xcode 16.2 or newer on macOS) before running the build plugin or package commands.
+
 ### First Time Setup
 
 1. Clone the repository

@@ -1,8 +1,9 @@
 import PackagePlugin
-import Foundation
+@preconcurrency import Foundation
 
 @main
 struct BuildFFmpegPlugin: CommandPlugin {
+    @MainActor
     func performCommand(context: PluginContext, arguments: [String]) async throws {
         let packageDir = context.package.directory
         let xcframeworkDir = packageDir.appending("xcframework")
@@ -138,6 +139,7 @@ struct BuildFFmpegPlugin: CommandPlugin {
 
         print("XCFrameworks setup complete!")
     }
+    @MainActor
     private static func detectHostArchitecture() throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/uname")

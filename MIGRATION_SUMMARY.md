@@ -19,6 +19,7 @@ This project has been updated from using **systemLibrary** targets (requiring Ho
   - libswscale.xcframework
 - **Modified**: `CFFmpeg` target now depends on binary targets instead of system libraries
 - **Added**: Platform specification `platforms: [.macOS(.v10_15)]`
+- **Updated**: `swift-tools-version` raised to `6.0`
 
 ### 2. Build Scripts
 - **Modified**: `Scripts/build_framework.sh` - removed individual zip creation
@@ -32,6 +33,11 @@ This project has been updated from using **systemLibrary** targets (requiring Ho
 ### 4. Source Code
 - **No changes needed**: Swift code continues to `import CFFmpeg` and `import SwiftFFmpeg` as before
 - CFFmpeg shim headers remain in place for Swift compatibility
+
+## Toolchain Requirements
+
+- Swift tools version **6.0** or newer (Xcode 16.2+ on macOS)
+- Command-line builds must use a Swift 6-compatible toolchain when invoking SwiftPM or the build plugin
 
 ## Migration Path for Users
 
