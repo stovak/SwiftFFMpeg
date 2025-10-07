@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-FFMPEG_VERSION=${FFMPEG_VERSION:-7.1}
+FFMPEG_VERSION=${FFMPEG_VERSION:-8.1}
 FFMPEG_ARCHIVE="ffmpeg-$FFMPEG_VERSION.tar.xz"
 FFMPEG_SOURCE_URL=${FFMPEG_SOURCE_URL:-"https://ffmpeg.org/releases/$FFMPEG_ARCHIVE"}
 FFMPEG_LIBS="libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale"
