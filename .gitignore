@@ -76,3 +76,6 @@ framework/
 output/
 FFmpeg-*/
 .DS_Store
+
+# Allow XCFramework artifacts to be tracked
+!xcframework/
