@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-15
+          - runner: macos-13
             arch: x86_64
           - runner: macos-15
             arch: arm64
@@ -46,6 +46,14 @@ jobs:
           if [ -z "$SWIFT_MAJOR" ] || [ "$SWIFT_MAJOR" -lt 6 ]; then
             echo "Swift 6 or newer is required to precompile FFmpeg. Detected version: ${SWIFT_VERSION:-unknown}" >&2
             exit 1
+          fi
+
+      - name: Ensure nasm for x86_64 builds
+        if: matrix.arch == 'x86_64'
+        run: |
+          set -euo pipefail
+          if ! command -v nasm >/dev/null 2>&1; then
+            brew install nasm
           fi
 
       - name: Build FFmpeg libraries
