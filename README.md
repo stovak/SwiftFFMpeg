@@ -40,14 +40,29 @@ The package requires pre-built XCFrameworks. You have two options:
 swift package plugin build-ffmpeg
 ```
 
-This will:
-- Clone FFmpeg 7.1 from the official git repository
-- Compile for your architecture (arm64 or x86_64)
-- Build XCFrameworks with proper structure
-- Place frameworks in `xcframework/` directory
-- Automatically make them available to the package
+What happens when you run the plugin:
 
-**Note:** Building takes 10-30 minutes depending on your machine.
+1. **Download prebuilt release (fast path).** If you provide a GitHub token in
+   `FFMPEG_FRAMEWORK_TOKEN` (preferred) or `GITHUB_TOKEN`, the plugin invokes
+   `Scripts/download_latest_xcframeworks.py` to fetch the newest tagged
+   XCFramework bundle published in
+   [`stovak/ffmpeg-framework`](https://github.com/stovak/ffmpeg-framework).
+   Downloading GitHub Actions artifacts requires `actions:read` scope. Example:
+
+   ```bash
+   export FFMPEG_FRAMEWORK_TOKEN=ghp_your_token_here
+   ```
+
+2. **Fallback to local build.** When no token is present—or if the download
+   fails—the plugin automatically compiles FFmpeg from source using the bundled
+   scripts.
+
+Either path places the XCFrameworks in the `xcframework/` directory and makes
+them available to SwiftPM.
+
+**Note:** Building from source takes 10-30 minutes depending on your machine
+and only occurs when the prebuilt download is unavailable or when you pass
+`--force`.
 
 #### Option 2: Manual Build
 

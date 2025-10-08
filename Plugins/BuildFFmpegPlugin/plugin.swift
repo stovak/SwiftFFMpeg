@@ -19,22 +19,105 @@ struct BuildFFmpegPlugin: CommandPlugin {
             "libswscale"
         ]
 
-        // Check if .xcframework directories already exist
-        var allExist = true
-        for framework in frameworkNames {
-            let frameworkPath = xcframeworkDir.appending("\(framework).xcframework")
-            if !FileManager.default.fileExists(atPath: frameworkPath.string) {
-                allExist = false
-                break
-            }
-        }
-
         // If all frameworks exist and --force is not specified
         let forceRebuild = arguments.contains("--force")
-        if allExist && !forceRebuild {
+        if frameworksExist(in: xcframeworkDir, names: frameworkNames) && !forceRebuild {
             print("All frameworks already exist. Use --force to rebuild.")
             return
         }
+
+        // Try downloading the latest prebuilt XCFrameworks bundle first
+        if try downloadPrebuiltFrameworks(
+            scriptsDir: scriptsDir,
+            xcframeworkDir: xcframeworkDir,
+            frameworkNames: frameworkNames
+        ) {
+            return
+        }
+
+        try buildFrameworksFromSource(
+            context: context,
+            packageDir: packageDir,
+            scriptsDir: scriptsDir,
+            xcframeworkDir: xcframeworkDir
+        )
+
+        print("XCFrameworks setup complete!")
+    }
+
+    private func frameworksExist(in directory: Path, names: [String]) -> Bool {
+        let fileManager = FileManager.default
+        for framework in names {
+            let frameworkPath = directory.appending("\(framework).xcframework")
+            if !fileManager.fileExists(atPath: frameworkPath.string) {
+                return false
+            }
+        }
+        return true
+    }
+
+    private func downloadPrebuiltFrameworks(
+        scriptsDir: Path,
+        xcframeworkDir: Path,
+        frameworkNames: [String]
+    ) throws -> Bool {
+        let downloadScript = scriptsDir.appending("download_latest_xcframeworks.py")
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: downloadScript.string) else {
+            return false
+        }
+
+        let environment = ProcessInfo.processInfo.environment
+        let hasToken = environment["FFMPEG_FRAMEWORK_TOKEN"] != nil || environment["GITHUB_TOKEN"] != nil
+        if !hasToken {
+            print("No GitHub token provided (FFMPEG_FRAMEWORK_TOKEN or GITHUB_TOKEN). Skipping prebuilt download.")
+            return false
+        }
+
+        print("Attempting to download prebuilt FFmpeg XCFrameworks…")
+
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = [
+            "python3",
+            downloadScript.string,
+            xcframeworkDir.string
+        ]
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        do {
+            try process.run()
+        } catch {
+            print("Failed to launch download script: \(error). Falling back to source build.")
+            return false
+        }
+
+        process.waitUntilExit()
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        if let output = String(data: data, encoding: .utf8), !output.isEmpty {
+            print(output)
+        }
+
+        if process.terminationStatus == 0 && frameworksExist(in: xcframeworkDir, names: frameworkNames) {
+            print("Prebuilt FFmpeg XCFrameworks downloaded successfully.")
+            return true
+        }
+
+        print("Prebuilt download failed or incomplete. Falling back to building from source.")
+        return false
+    }
+
+    private func buildFrameworksFromSource(
+        context: PluginContext,
+        packageDir: Path,
+        scriptsDir: Path,
+        xcframeworkDir: Path
+    ) throws {
+        print("Setting up XCFrameworks from source build…")
 
         // Create a script to build frameworks from FFmpeg source
         let scriptPath = context.pluginWorkDirectory.appending("build_frameworks.sh")
@@ -91,7 +174,6 @@ struct BuildFFmpegPlugin: CommandPlugin {
         try fileManager.setAttributes([.posixPermissions: permissions], ofItemAtPath: scriptPath.string)
 
         // Execute the script
-        print("Setting up XCFrameworks...")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/bash")
         process.arguments = [scriptPath.string]
@@ -111,8 +193,6 @@ struct BuildFFmpegPlugin: CommandPlugin {
         if process.terminationStatus != 0 {
             throw PluginError.buildFailed
         }
-
-        print("XCFrameworks setup complete!")
     }
 }
 

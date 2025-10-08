@@ -41,10 +41,15 @@ SwiftFFmpeg Package
 ### First Time Setup
 
 1. Clone the repository
-2. Build the XCFrameworks:
+2. Fetch the FFmpeg XCFrameworks:
    ```bash
    swift package plugin build-ffmpeg
    ```
+   If you set `FFMPEG_FRAMEWORK_TOKEN` (or `GITHUB_TOKEN`) with `actions:read`
+   scope, the plugin downloads the latest tagged prebuilt bundle from
+   [`stovak/ffmpeg-framework`](https://github.com/stovak/ffmpeg-framework).
+   Without a token it skips the download step and compiles FFmpeg from source
+   automatically.
 3. The frameworks will be placed in `xcframework/` directory
 4. Build your project:
    ```bash
@@ -53,12 +58,14 @@ SwiftFFmpeg Package
 
 ### Subsequent Builds
 
-Once XCFrameworks are built, they're cached in `xcframework/`. You only need to rebuild if:
+Once XCFrameworks are available, they're cached in `xcframework/`. You only need
+to refresh them if:
 - You want to update FFmpeg version
+- A new release of `stovak/ffmpeg-framework` ships updated binaries
 - You need to support additional architectures
 - The build failed or is corrupted
 
-To force a rebuild:
+To force a refresh (download the newest bundle or rebuild from source):
 ```bash
 swift package plugin build-ffmpeg --force
 ```

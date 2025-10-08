@@ -30,8 +30,11 @@ This project has been updated from using **systemLibrary** targets (requiring Ho
 - **Added**: This MIGRATION_SUMMARY.md
 
 ### 4. Source Code
-- **No changes needed**: Swift code continues to `import CFFmpeg` and `import SwiftFFmpeg` as before
-- CFFmpeg shim headers remain in place for Swift compatibility
+- **Updated**: `BuildFFmpegPlugin` now attempts to download prebuilt XCFrameworks
+  when a GitHub token is provided, falling back to the existing source build
+  flow otherwise.
+- **Unchanged**: Swift code continues to `import CFFmpeg` and `import SwiftFFmpeg`
+  as before, and CFFmpeg shim headers remain in place for Swift compatibility.
 
 ## Migration Path for Users
 
