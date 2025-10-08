@@ -30,22 +30,6 @@ dependencies: [
 
 SwiftPM will automatically discover the system libraries via `pkg-config`. Make sure your environment can locate FFmpeg's `.pc` files (Homebrew handles this automatically).
 
-### Optional: Download prebuilt FFmpeg XCFrameworks
-
-SwiftFFmpeg ships with a command plugin that can download the latest prebuilt XCFramework bundle published by [`stovak/ffmpeg-framework`](https://github.com/stovak/ffmpeg-framework). This is useful when you need to embed FFmpeg directly into an application bundle instead of relying on a system installation.
-
-1. Create a GitHub personal access token with the `actions:read` scope and expose it as either `FFMPEG_FRAMEWORK_TOKEN` (preferred) or `GITHUB_TOKEN` in your environment.
-2. Run the plugin to fetch and extract the frameworks into the repository's `xcframework/` directory:
-
-   ```bash
-   swift package --allow-writing-to-package-directory plugin \
-     --command download-ffmpeg-xcframeworks
-   ```
-
-The helper script replaces any existing contents inside `xcframework/` with the freshly downloaded frameworks. They are not required for the standard system-library build, but the artifacts are available for projects that need to redistribute FFmpeg.
-Pass `--force` to the command if you need to refresh an already downloaded
-set of frameworks.
-
 ## Documentation
 
 - [API documentation](https://sunlubo.github.io/SwiftFFmpeg)

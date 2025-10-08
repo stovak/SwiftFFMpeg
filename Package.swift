@@ -13,18 +13,6 @@ let package = Package(
     )
   ],
   targets: [
-    .plugin(
-      name: "FetchFFmpegXCFrameworks",
-      capability: .command(
-        intent: .custom(
-          verb: "download-ffmpeg-xcframeworks",
-          description: "Download the latest stovak/ffmpeg-framework XCFramework artifact into the package."
-        ),
-        permissions: [
-          .writeToPackageDirectory(reason: "Place the downloaded FFmpeg XCFrameworks under the xcframework/ directory.")
-        ]
-      )
-    ),
     .systemLibrary(
       name: "CFFmpeg",
       pkgConfig: "libavformat",

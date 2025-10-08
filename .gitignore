@@ -70,6 +70,3 @@ SwiftFFmpeg.xcodeproj/
 docs/
 # Build outputs
 .DS_Store
-
-# Prebuilt FFmpeg artifacts
-xcframework/
