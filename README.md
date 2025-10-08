@@ -18,7 +18,7 @@ brew install ffmpeg
 
 ### Swift Package Manager
 
-SwiftFFmpeg uses [SwiftPM](https://swift.org/package-manager/) as its build tool and bundles FFmpeg as XCFrameworks for a self-contained, portable installation.
+SwiftFFmpeg uses [SwiftPM](https://swift.org/package-manager/) as its build tool and links against the FFmpeg libraries provided by your system installation.
 
 To depend on SwiftFFmpeg in your own project, add a `dependencies` clause to your `Package.swift`:
 
@@ -28,57 +28,7 @@ dependencies: [
 ]
 ```
 
-**Important:** Before building, you need to generate the XCFrameworks first (see below).
-
-### Building FFmpeg XCFrameworks
-
-The package requires pre-built XCFrameworks. You have two options:
-
-#### Option 1: Using the Plugin (Recommended)
-
-```bash
-swift package plugin build-ffmpeg
-```
-
-This will:
-- Clone FFmpeg 7.1 from the official git repository
-- Compile for your architecture (arm64 or x86_64)
-- Build XCFrameworks with proper structure
-- Place frameworks in `xcframework/` directory
-- Automatically make them available to the package
-
-**Note:** Building takes 10-30 minutes depending on your machine.
-
-#### Option 2: Manual Build
-
-Run the build script directly:
-
-```bash
-./Scripts/build.sh
-```
-
-The build process:
-1. Clones FFmpeg from `https://git.ffmpeg.org/ffmpeg.git` (release/7.1 branch)
-2. Configures and compiles FFmpeg with GPL support
-3. Creates framework structures for all FFmpeg libraries (libavcodec, libavdevice, libavfilter, libavformat, libavutil, libpostproc, libswresample, libswscale)
-4. Builds architecture-specific XCFrameworks in `output/xcframework/`
-
-After building, copy the frameworks:
-
-```bash
-mkdir -p xcframework
-cp -R output/xcframework/* xcframework/
-```
-
-### Packaging for Distribution (Advanced)
-
-To create distributable zip files with checksums for remote hosting:
-
-```bash
-./Scripts/package_xcframeworks.sh
-```
-
-This creates zip files and checksums for each XCFramework, which can be uploaded to GitHub Releases or other hosting and referenced via URL in `Package.swift` using `.binaryTarget` with remote URLs.
+SwiftPM will automatically discover the system libraries via `pkg-config`. Make sure your environment can locate FFmpeg's `.pc` files (Homebrew handles this automatically).
 
 ## Documentation
 

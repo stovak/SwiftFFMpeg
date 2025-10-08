@@ -13,61 +13,12 @@ let package = Package(
     )
   ],
   targets: [
-    .plugin(
-      name: "BuildFFmpegPlugin",
-      capability: .command(
-        intent: .custom(
-          verb: "build-ffmpeg",
-          description: "Clone FFmpeg from git and build XCFrameworks"
-        )
-      )
-    ),
-    // FFmpeg XCFramework binary targets
-    .binaryTarget(
-      name: "libavcodec",
-      path: "xcframework/libavcodec.xcframework"
-    ),
-    .binaryTarget(
-      name: "libavdevice",
-      path: "xcframework/libavdevice.xcframework"
-    ),
-    .binaryTarget(
-      name: "libavfilter",
-      path: "xcframework/libavfilter.xcframework"
-    ),
-    .binaryTarget(
-      name: "libavformat",
-      path: "xcframework/libavformat.xcframework"
-    ),
-    .binaryTarget(
-      name: "libavutil",
-      path: "xcframework/libavutil.xcframework"
-    ),
-    .binaryTarget(
-      name: "libpostproc",
-      path: "xcframework/libpostproc.xcframework"
-    ),
-    .binaryTarget(
-      name: "libswresample",
-      path: "xcframework/libswresample.xcframework"
-    ),
-    .binaryTarget(
-      name: "libswscale",
-      path: "xcframework/libswscale.xcframework"
-    ),
-    .target(
+    .systemLibrary(
       name: "CFFmpeg",
-      dependencies: [
-        "libavcodec",
-        "libavdevice",
-        "libavfilter",
-        "libavformat",
-        "libavutil",
-        "libpostproc",
-        "libswresample",
-        "libswscale"
-      ],
-      publicHeadersPath: "."
+      pkgConfig: "libavformat",
+      providers: [
+        .brew(["ffmpeg"])
+      ]
     ),
     .target(
       name: "SwiftFFmpeg",
