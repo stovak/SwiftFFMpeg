@@ -68,14 +68,8 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 SwiftFFmpeg.xcodeproj/
 docs/
-scripts/*
-!scripts/*.sh
-
 # Build outputs
-framework/
-output/
-FFmpeg-*/
 .DS_Store
 
-# Allow XCFramework artifacts to be tracked
-!xcframework/
+# Prebuilt FFmpeg artifacts
+xcframework/

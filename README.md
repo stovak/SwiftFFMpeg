@@ -18,7 +18,7 @@ brew install ffmpeg
 
 ### Swift Package Manager
 
-SwiftFFmpeg uses [SwiftPM](https://swift.org/package-manager/) as its build tool and bundles FFmpeg as XCFrameworks for a self-contained, portable installation.
+SwiftFFmpeg uses [SwiftPM](https://swift.org/package-manager/) as its build tool and links against the FFmpeg libraries provided by your system installation.
 
 To depend on SwiftFFmpeg in your own project, add a `dependencies` clause to your `Package.swift`:
 
@@ -28,72 +28,23 @@ dependencies: [
 ]
 ```
 
-**Important:** Before building, you need to generate the XCFrameworks first (see below).
+SwiftPM will automatically discover the system libraries via `pkg-config`. Make sure your environment can locate FFmpeg's `.pc` files (Homebrew handles this automatically).
 
-### Building FFmpeg XCFrameworks
+### Optional: Download prebuilt FFmpeg XCFrameworks
 
-The package requires pre-built XCFrameworks. You have two options:
+SwiftFFmpeg ships with a command plugin that can download the latest prebuilt XCFramework bundle published by [`stovak/ffmpeg-framework`](https://github.com/stovak/ffmpeg-framework). This is useful when you need to embed FFmpeg directly into an application bundle instead of relying on a system installation.
 
-#### Option 1: Using the Plugin (Recommended)
-
-```bash
-swift package plugin build-ffmpeg
-```
-
-What happens when you run the plugin:
-
-1. **Download prebuilt release (fast path).** If you provide a GitHub token in
-   `FFMPEG_FRAMEWORK_TOKEN` (preferred) or `GITHUB_TOKEN`, the plugin invokes
-   `Scripts/download_latest_xcframeworks.py` to fetch the newest tagged
-   XCFramework bundle published in
-   [`stovak/ffmpeg-framework`](https://github.com/stovak/ffmpeg-framework).
-   Downloading GitHub Actions artifacts requires `actions:read` scope. Example:
+1. Create a GitHub personal access token with the `actions:read` scope and expose it as either `FFMPEG_FRAMEWORK_TOKEN` (preferred) or `GITHUB_TOKEN` in your environment.
+2. Run the plugin to fetch and extract the frameworks into the repository's `xcframework/` directory:
 
    ```bash
-   export FFMPEG_FRAMEWORK_TOKEN=ghp_your_token_here
+   swift package --allow-writing-to-package-directory plugin \
+     --command download-ffmpeg-xcframeworks
    ```
 
-2. **Fallback to local build.** When no token is present—or if the download
-   fails—the plugin automatically compiles FFmpeg from source using the bundled
-   scripts.
-
-Either path places the XCFrameworks in the `xcframework/` directory and makes
-them available to SwiftPM.
-
-**Note:** Building from source takes 10-30 minutes depending on your machine
-and only occurs when the prebuilt download is unavailable or when you pass
-`--force`.
-
-#### Option 2: Manual Build
-
-Run the build script directly:
-
-```bash
-./Scripts/build.sh
-```
-
-The build process:
-1. Clones FFmpeg from `https://git.ffmpeg.org/ffmpeg.git` (release/7.1 branch)
-2. Configures and compiles FFmpeg with GPL support
-3. Creates framework structures for all FFmpeg libraries (libavcodec, libavdevice, libavfilter, libavformat, libavutil, libpostproc, libswresample, libswscale)
-4. Builds architecture-specific XCFrameworks in `output/xcframework/`
-
-After building, copy the frameworks:
-
-```bash
-mkdir -p xcframework
-cp -R output/xcframework/* xcframework/
-```
-
-### Packaging for Distribution (Advanced)
-
-To create distributable zip files with checksums for remote hosting:
-
-```bash
-./Scripts/package_xcframeworks.sh
-```
-
-This creates zip files and checksums for each XCFramework, which can be uploaded to GitHub Releases or other hosting and referenced via URL in `Package.swift` using `.binaryTarget` with remote URLs.
+The helper script replaces any existing contents inside `xcframework/` with the freshly downloaded frameworks. They are not required for the standard system-library build, but the artifacts are available for projects that need to redistribute FFmpeg.
+Pass `--force` to the command if you need to refresh an already downloaded
+set of frameworks.
 
 ## Documentation
 

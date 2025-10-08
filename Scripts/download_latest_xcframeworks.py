@@ -1,24 +1,22 @@
 #!/usr/bin/env python3
 """Download the latest FFmpeg XCFramework bundle from stovak/ffmpeg-framework.
 
-This script locates the most recent tagged release in the upstream
-`stovak/ffmpeg-framework` repository, finds the associated GitHub Actions
-artifact that packages the prebuilt XCFrameworks, downloads it, and extracts
-all `.xcframework` directories into the Swift package's `xcframework/`
-folder.
+The script locates the newest tagged release in the upstream
+`stovak/ffmpeg-framework` repository, finds the GitHub Actions artifact that
+contains the prebuilt XCFrameworks, downloads the archive, and extracts every
+`.xcframework` directory into `xcframework/` inside the Swift package.
 
 Authentication:
   * Set `FFMPEG_FRAMEWORK_TOKEN` (preferred) or `GITHUB_TOKEN` to a GitHub
-    personal access token with `actions:read` scope in order to download the
+    personal access token with the `actions:read` scope in order to download the
     workflow artifact.
-  * Unauthenticated requests are used for metadata queries, but the artifact
-    download itself requires authentication. The script will exit with an
-    error if the token is not available.
+  * Metadata queries (release listing) are performed anonymously when possible,
+    but the artifact download itself requires authentication.
 
 Usage:
   python3 Scripts/download_latest_xcframeworks.py [destination]
 
-If no destination is supplied, the script defaults to `xcframework/` inside the
+If no destination is supplied, the script defaults to `xcframework/` in the
 current working directory.
 """
 from __future__ import annotations
